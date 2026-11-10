@@ -43,18 +43,6 @@
             border-color: #3b82f6;
             box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
         }
-
-        /* รูปแบบเอกสารสรุป PDF สำหรับระบบพิมพ์มือถือ */
-        @media print {
-            body * { visibility: hidden !important; }
-            #mobilePrintContainer, #mobilePrintContainer * { visibility: visible !important; }
-            #mobilePrintContainer { 
-                position: absolute; left: 0; top: 0; width: 100%; 
-                background: #ffffff !important; color: #000000 !important; 
-                padding: 10px; font-size: 10px;
-            }
-            .no-print { display: none !important; }
-        }
     </style>
 </head>
 <body class="flex flex-col text-xs select-none">
@@ -334,24 +322,24 @@
                 <div class="flex flex-col gap-1.5 mb-2 shrink-0 border-b border-gray-800 pb-2">
                     <div class="flex justify-between items-center">
                         <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Netflix Standard Exports (v1.1)</h2>
-                        <span class="text-[8px] text-gray-500">กดเพื่อส่งออก/แชร์ไฟล์บนมือถือ</span>
+                        <span class="text-[8px] text-gray-500">เปิดหน้าต่างส่งออกมือถือ</span>
                     </div>
                     
-                    <!-- ปุ่มส่งออก 5 รูปแบบมาตรฐานสากล -->
+                    <!-- ปุ่มส่งออก 5 รูปแบบสากล -->
                     <div class="grid grid-cols-5 gap-1">
-                        <button onclick="exportPDF('master')" class="bg-red-950 text-red-300 border border-red-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="triggerExport('master-pdf')" class="bg-red-950 text-red-300 border border-red-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-file-pdf"></i> Master PDF
                         </button>
-                        <button onclick="exportCSV('master')" class="bg-blue-950 text-blue-300 border border-blue-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="triggerExport('master-csv')" class="bg-blue-950 text-blue-300 border border-blue-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-file-csv"></i> Master CSV
                         </button>
-                        <button onclick="exportPDF('sound')" class="bg-purple-950 text-purple-200 border border-purple-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="triggerExport('sound-pdf')" class="bg-purple-950 text-purple-200 border border-purple-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-file-pdf"></i> Sound PDF
                         </button>
-                        <button onclick="exportCSV('sound')" class="bg-purple-900/40 text-purple-300 border border-purple-700/60 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="triggerExport('sound-csv')" class="bg-purple-900/40 text-purple-300 border border-purple-700/60 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-file-csv"></i> Sound CSV
                         </button>
-                        <button onclick="exportALE()" class="bg-amber-950 text-amber-300 border border-amber-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="triggerExport('avid-ale')" class="bg-amber-950 text-amber-300 border border-amber-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-film"></i> Avid ALE
                         </button>
                     </div>
@@ -391,8 +379,38 @@
         </main>
     </div>
 
-    <!-- Container สำหรับสั่งพิมพ์ PDF ผ่านมือถือ -->
-    <div id="mobilePrintContainer" class="hidden"></div>
+    <!-- 3. IN-APP MOBILE EXPORT MODAL SHEET (หน้าต่างส่งออกไฟล์บนมือถือ 100% Works) -->
+    <div id="exportModal" class="fixed inset-0 bg-black/95 hidden z-50 flex items-center justify-center p-3 backdrop-blur-md">
+        <div class="bg-[#16161c] border border-gray-700 rounded-2xl w-full max-w-lg h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-3 border-b border-gray-800 bg-[#111115]">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-share-nodes text-red-500 text-sm"></i>
+                    <h3 id="exportModalTitle" class="font-bold text-white text-xs uppercase tracking-wider">Export Report</h3>
+                </div>
+                <button onclick="closeExportModal()" class="text-gray-400 hover:text-white w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center text-xs btn-press">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Quick Action Controls -->
+            <div class="p-2.5 bg-[#1a1a22] border-b border-gray-800 flex gap-2 shrink-0">
+                <button onclick="copyExportText()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl font-bold text-xs shadow-lg btn-press flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-copy"></i>
+                    <span>คัดลอกข้อความ</span>
+                </button>
+                <button onclick="shareExportText()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl font-bold text-xs shadow-lg btn-press flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>แชร์เข้า LINE / Apps</span>
+                </button>
+            </div>
+
+            <!-- Export Display View Area -->
+            <div id="exportDisplayArea" class="flex-1 overflow-auto scroll-custom p-3 bg-black">
+                <!-- Data Content Rendered Here -->
+            </div>
+        </div>
+    </div>
 
     <!-- Modals (Scene & Shot) -->
     <div id="sceneModal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center backdrop-blur-sm">
@@ -748,94 +766,11 @@
         function scrollLogTo(d) { const c = document.getElementById('logTableContainer'); c.scrollTo({ top: d==='top'?0:c.scrollHeight, behavior:'smooth' }); }
 
         // =========================================================================
-        // 🚀 EXPORT ENGINE (v1.1 Native Share & Print System)
+        // 🚀 IN-APP MOBILE EXPORT ENGINE (v1.1 เด้งสรุปในแอป 100% Works)
         // =========================================================================
+        let currentExportText = "";
 
-        // 1. ส่งออก CSV (มี Web Share Fallback รองรับมือถือ 100%)
-        async function exportCSV(mode = 'master') {
-            if (!logsData || logsData.length === 0) return alert('ไม่มีข้อมูล Take ในโปรเจกต์นี้');
-
-            const proj = getCurrentProject();
-            const projName = proj.name || 'Project';
-            const date = (proj.state && proj.state.shootDate) ? proj.state.shootDate : '';
-            const fileName = `${mode === 'sound' ? 'Sound_Report' : 'Master_Report'}_${projName}_${date}.csv`.replace(/\s+/g, '_');
-
-            let headers = mode === 'sound'
-                ? ["Scene", "Shot", "Take", "Status", "Cam ID/Roll", "Sound Roll", "Sound Sync", "Track Map", "Notes"]
-                : ["Scene", "Shot", "Take", "Status", "Cam ID", "Cam Roll", "Sound Roll", "Sound Sync", "Lens", "T-Stop", "Notes"];
-
-            let rows = logsData.map(log => {
-                if (mode === 'sound') {
-                    return [
-                        log.scene || '-', log.shot || '-', log.take || '-', log.status || '-',
-                        `${log.camRoll || '-'}(${log.camID || 'A-Cam'})`,
-                        log.soundRoll || '-', log.soundSync || 'SYNC', log.soundTrack || '-', log.notes || ''
-                    ];
-                } else {
-                    return [
-                        log.scene || '-', log.shot || '-', log.take || '-', log.status || '-',
-                        log.camID || 'A-Cam', log.camRoll || '-', log.soundRoll || '-', log.soundSync || 'SYNC',
-                        log.lens || '-', log.camTStop || '-', log.notes || ''
-                    ];
-                }
-            });
-
-            const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const file = new File([blob], fileName, { type: 'text/csv' });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({ files: [file], title: fileName });
-                    return;
-                } catch (e) {
-                    console.log('Share cancelled', e);
-                }
-            }
-
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // 2. ส่งออก ALE File (Avid Log Exchange มาตรฐานระบบตัดต่อ Avid / DaVinci Resolve)
-        async function exportALE() {
-            if (!logsData || logsData.length === 0) return alert('ไม่มีข้อมูล Take สำหรับสร้าง ALE');
-
-            const proj = getCurrentProject();
-            const projName = proj.name || 'PROJECT';
-            const dateStr = (proj.state && proj.state.shootDate) ? proj.state.shootDate : new Date().toISOString().split('T')[0];
-            const fileName = `${projName}_${dateStr}.ale`.replace(/\s+/g, '_');
-
-            let ale = `Heading\nFIELD_DELIM\tTABS\nVIDEO_FORMAT\t1080\nFPS\t24\n\nColumn\nName\tScene\tTake\tTape\tNotes\n\nData\n`;
-            logsData.forEach(row => {
-                const clipName = `${row.scene}_${row.shot}_T${row.take}`;
-                ale += `${clipName}\t${row.scene}${row.shot}\t${row.take}\t${row.camRoll || 'A001'}\t${row.notes || ''}\n`;
-            });
-
-            const blob = new Blob([ale], { type: 'text/plain;charset=utf-8;' });
-            const file = new File([blob], fileName, { type: 'text/plain' });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({ files: [file], title: fileName });
-                    return;
-                } catch (e) { console.log(e); }
-            }
-
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // 3. ส่งออก PDF (ใช้ Native Device Print Manager บนโทรศัพท์ 100%)
-        function exportPDF(mode = 'master') {
+        function triggerExport(type) {
             if (!logsData || logsData.length === 0) return alert('ไม่มีข้อมูล Take ในโปรเจกต์นี้');
 
             const proj = getCurrentProject();
@@ -845,62 +780,138 @@
             const dop = document.getElementById('dop').value || '-';
             const sndMixer = document.getElementById('sndMixer').value || '-';
 
-            const isSound = mode === 'sound';
-            const title = isSound ? `SOUND REPORT - ${prodName.toUpperCase()}` : `MASTER CINE REPORT - ${prodName.toUpperCase()}`;
+            const modal = document.getElementById('exportModal');
+            const title = document.getElementById('exportModalTitle');
+            const displayArea = document.getElementById('exportDisplayArea');
 
-            let tableHeaderHtml = isSound
-                ? `<tr><th style="border:1px solid #000;padding:4px;">#</th><th style="border:1px solid #000;padding:4px;">Scene</th><th style="border:1px solid #000;padding:4px;">Shot</th><th style="border:1px solid #000;padding:4px;">Take</th><th style="border:1px solid #000;padding:4px;">Status</th><th style="border:1px solid #000;padding:4px;">Cam ID/Roll</th><th style="border:1px solid #000;padding:4px;">Sound Roll</th><th style="border:1px solid #000;padding:4px;">Sync</th><th style="border:1px solid #000;padding:4px;">Notes</th></tr>`
-                : `<tr><th style="border:1px solid #000;padding:4px;">#</th><th style="border:1px solid #000;padding:4px;">Scene</th><th style="border:1px solid #000;padding:4px;">Shot</th><th style="border:1px solid #000;padding:4px;">Take</th><th style="border:1px solid #000;padding:4px;">Status</th><th style="border:1px solid #000;padding:4px;">Cam Roll/ID</th><th style="border:1px solid #000;padding:4px;">Sound Roll</th><th style="border:1px solid #000;padding:4px;">Sync</th><th style="border:1px solid #000;padding:4px;">Lens</th><th style="border:1px solid #000;padding:4px;">Notes</th></tr>`;
+            // 1. MASTER CSV / SOUND CSV
+            if (type === 'master-csv' || type === 'sound-csv') {
+                const isSound = type === 'sound-csv';
+                title.innerText = isSound ? "Export: Sound CSV Report" : "Export: Master CSV Report";
 
-            let tableRowsHtml = logsData.map((log, index) => {
-                const num = logsData.length - index;
-                if (isSound) {
-                    return `<tr>
-                        <td style="border:1px solid #ccc;padding:4px;">${num}</td>
-                        <td style="border:1px solid #ccc;padding:4px;"><b>${log.scene}</b></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.shot}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.take}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.status || '-'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.camRoll || '-'}<br><small>(${log.camID || 'A-Cam'})</small></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.soundRoll || '-'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.soundSync || 'SYNC'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.notes || ''}</td>
-                    </tr>`;
-                } else {
-                    return `<tr>
-                        <td style="border:1px solid #ccc;padding:4px;">${num}</td>
-                        <td style="border:1px solid #ccc;padding:4px;"><b>${log.scene}</b></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.shot}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.take}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.status || '-'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.camRoll || '-'}<br><small>(${log.camID || 'A-Cam'})</small></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.soundRoll || '-'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.soundSync || 'SYNC'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.lens || '-'}<br><small>@ ${log.camTStop || '-'}</small></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.notes || ''}</td>
-                    </tr>`;
-                }
-            }).join('');
+                let headers = isSound 
+                    ? ["Scene", "Shot", "Take", "Status", "Cam ID/Roll", "Sound Roll", "Sound Sync", "Notes"]
+                    : ["Scene", "Shot", "Take", "Status", "Cam ID", "Cam Roll", "Sound Roll", "Sound Sync", "Lens", "T-Stop", "Notes"];
 
-            const container = document.getElementById('mobilePrintContainer');
-            container.innerHTML = `
-                <div style="font-family: Arial, sans-serif; color: #000;">
-                    <h2 style="margin: 0 0 6px 0; font-size: 14px;">${title}</h2>
-                    <div style="font-size: 9px; margin-bottom: 10px; color: #333;">
-                        <span><b>Date:</b> ${date || '-'}</span> | 
-                        <span><b>Director:</b> ${director}</span> | 
-                        <span><b>DoP:</b> ${dop}</span> | 
-                        <span><b>Sound Mixer:</b> ${sndMixer}</span> | 
-                        <span><b>Total Takes:</b> ${logsData.length}</span>
+                let rows = logsData.map(log => {
+                    return isSound 
+                        ? [log.scene, log.shot, log.take, log.status, `${log.camRoll}(${log.camID})`, log.soundRoll, log.soundSync, log.notes]
+                        : [log.scene, log.shot, log.take, log.status, log.camID, log.camRoll, log.soundRoll, log.soundSync, log.lens, log.camTStop, log.notes];
+                });
+
+                currentExportText = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c||'').replace(/"/g, '""')}"`).join(","))].join("\n");
+                
+                displayArea.innerHTML = `
+                    <div class="text-[10px] font-mono text-gray-400 mb-2">โครงสร้างรหัส CSV สำหรับเปิดใน Excel หรือส่งต่อ:</div>
+                    <textarea readonly class="w-full h-80 bg-[#111115] border border-gray-800 p-2 rounded-xl text-green-400 font-mono text-[10px] select-all">${currentExportText}</textarea>
+                `;
+            }
+            // 2. AVID ALE FILE
+            else if (type === 'avid-ale') {
+                title.innerText = "Export: Avid ALE File";
+                let ale = `Heading\nFIELD_DELIM\tTABS\nVIDEO_FORMAT\t1080\nFPS\t24\n\nColumn\nName\tScene\tTake\tTape\tNotes\n\nData\n`;
+                logsData.forEach(row => {
+                    const clipName = `${row.scene}_${row.shot}_T${row.take}`;
+                    ale += `${clipName}\t${row.scene}${row.shot}\t${row.take}\t${row.camRoll || 'A001'}\t${row.notes || ''}\n`;
+                });
+
+                currentExportText = ale;
+                displayArea.innerHTML = `
+                    <div class="text-[10px] font-mono text-gray-400 mb-2">ไฟล์โครงสร้าง Avid Log Exchange (ALE):</div>
+                    <textarea readonly class="w-full h-80 bg-[#111115] border border-gray-800 p-2 rounded-xl text-yellow-400 font-mono text-[10px] select-all">${currentExportText}</textarea>
+                `;
+            }
+            // 3. MASTER PDF / SOUND PDF (Visual Report Sheet สำหรับแคปจอ 100%)
+            else if (type === 'master-pdf' || type === 'sound-pdf') {
+                const isSound = type === 'sound-pdf';
+                title.innerText = isSound ? "Export: Sound PDF Sheet" : "Export: Master PDF Sheet";
+
+                let plainTextSummary = `🎬 ${isSound ? 'SOUND REPORT' : 'MASTER CINE REPORT'} - ${prodName.toUpperCase()}\nDate: ${date} | Total Takes: ${logsData.length}\n----------------------------------\n`;
+                
+                let tableRows = logsData.map((log, index) => {
+                    const num = logsData.length - index;
+                    plainTextSummary += `#${num} Sc:${log.scene} Sh:${log.shot} Tk:${log.take} [${log.status}] Cam:${log.camRoll}(${log.camID}) Snd:${log.soundRoll} ${log.notes ? 'Note:'+log.notes : ''}\n`;
+                    
+                    return `
+                        <tr class="border-b border-gray-300">
+                            <td class="p-1 font-bold text-center">${num}</td>
+                            <td class="p-1 font-bold">${log.scene}</td>
+                            <td class="p-1 font-bold text-amber-700">${log.shot}</td>
+                            <td class="p-1 text-center font-bold text-red-600">${log.take}</td>
+                            <td class="p-1 text-center">${log.status}</td>
+                            <td class="p-1">${log.camRoll || '-'}<br><span class="text-[8px] text-gray-500">(${log.camID})</span></td>
+                            <td class="p-1 font-mono">${log.soundRoll || '-'}</td>
+                            <td class="p-1 text-center">${log.soundSync}</td>
+                            ${!isSound ? `<td class="p-1">${log.lens || '-'} @${log.camTStop || '-'}</td>` : ''}
+                            <td class="p-1 text-gray-700">${log.notes || ''}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                currentExportText = plainTextSummary;
+
+                displayArea.innerHTML = `
+                    <div class="text-[9px] text-blue-400 mb-2 font-bold"><i class="fa-solid fa-camera mr-1"></i> สามารถแคปภาพหน้าจอตารางด้านล่างนี้ ส่งเข้ากรุ๊ปไลน์ได้ทันที:</div>
+                    <div class="bg-white text-black p-3 rounded-xl shadow-xl font-sans">
+                        <div class="border-b-2 border-black pb-2 mb-2 flex justify-between items-end">
+                            <div>
+                                <h2 class="font-black text-sm uppercase tracking-wider">${isSound ? 'SOUND REPORT' : 'MASTER CINE REPORT'}</h2>
+                                <div class="text-[9px] font-bold text-gray-700">${prodName}</div>
+                            </div>
+                            <div class="text-[9px] text-right font-mono">Date: ${date}</div>
+                        </div>
+                        <div class="text-[8px] text-gray-600 mb-2 flex space-x-3 border-b border-gray-300 pb-1">
+                            <span><b>DIR:</b> ${director}</span>
+                            <span><b>DP:</b> ${dop}</span>
+                            <span><b>MIXER:</b> ${sndMixer}</span>
+                        </div>
+                        <table class="w-full text-left text-[9px] whitespace-nowrap">
+                            <thead>
+                                <tr class="bg-gray-200 text-black border-b border-black font-bold">
+                                    <th class="p-1">#</th>
+                                    <th class="p-1">Scene</th>
+                                    <th class="p-1">Shot</th>
+                                    <th class="p-1 text-center">Take</th>
+                                    <th class="p-1 text-center">Status</th>
+                                    <th class="p-1">Cam ID/Roll</th>
+                                    <th class="p-1">Sound Roll</th>
+                                    <th class="p-1 text-center">Sync</th>
+                                    ${!isSound ? '<th class="p-1">Lens</th>' : ''}
+                                    <th class="p-1">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
                     </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 9px; text-align: left;">
-                        <thead>${tableHeaderHtml}</thead>
-                        <tbody>${tableRowsHtml}</tbody>
-                    </table>
-                </div>
-            `;
+                `;
+            }
 
-            window.print();
+            modal.classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        function copyExportText() {
+            if (!currentExportText) return;
+            navigator.clipboard.writeText(currentExportText).then(() => {
+                alert('คัดลอกข้อความสรุปเรียบร้อย! สามารถสลับไปแอป LINE แล้วกด "วาง (Paste)" ได้เลย');
+            }).catch(() => {
+                alert('โปรดใช้นิ้วแตะคัดลอกข้อความในกล่องด้วยตนเอง');
+            });
+        }
+
+        function shareExportText() {
+            if (!currentExportText) return;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Cine Report Wrap Log',
+                    text: currentExportText
+                }).catch(() => {});
+            } else {
+                copyExportText();
+            }
         }
     </script>
 </body>
