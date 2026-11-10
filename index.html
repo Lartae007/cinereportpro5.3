@@ -44,11 +44,15 @@
             box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
         }
 
-        /* รูปแบบเอกสาร PDF มาตรฐานกองถ่าย (แก้ปัญหาจอดำ และรองรับพิมพ์แนวนอน) */
+        /* รูปแบบเอกสาร PDF มาตรฐานกองถ่าย (แก้ไขปัญหาหน้าจอดำ และบังคับพิมพ์แนวนอนขาวบริสุทธิ์) */
         @media print {
             @page {
                 size: landscape;
-                margin: 8mm;
+                margin: 6mm;
+            }
+            *, *::before, *::after {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             html, body { 
                 position: static !important;
@@ -56,9 +60,11 @@
                 height: auto !important;
                 min-height: 100% !important;
                 overflow: visible !important;
+                background: #ffffff !important; 
                 background-color: #ffffff !important; 
-                background: #ffffff !important;
                 color: #000000 !important; 
+                margin: 0 !important;
+                padding: 0 !important;
             }
             body > *:not(#mobilePrintContainer) { 
                 display: none !important; 
@@ -66,11 +72,12 @@
             #mobilePrintContainer { 
                 display: block !important;
                 visibility: visible !important; 
-                position: relative !important;
+                position: absolute !important;
                 left: 0 !important; 
                 top: 0 !important; 
                 width: 100% !important; 
                 background: #ffffff !important; 
+                background-color: #ffffff !important;
                 color: #000000 !important; 
                 padding: 0 !important; 
                 margin: 0 !important;
@@ -872,62 +879,62 @@
             const reportTitle = isSound ? 'DAILY SOUND REPORT' : 'DAILY MASTER CINE REPORT';
 
             let tableHeaderHtml = isSound
-                ? `<tr style="background-color: #222226; color: #ffffff; text-align: left; font-size: 9px;">
-                    <th style="padding: 6px; border: 1px solid #111; text-align: center; width: 30px;">#</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Scene</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Shot</th>
-                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Take</th>
-                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Status</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Cam Roll/ID</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Sound Roll</th>
-                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Sync</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Notes</th>
+                ? `<tr style="background-color: #1e293b; color: #ffffff; text-align: left; font-size: 9px;">
+                    <th style="padding: 6px; border: 1px solid #0f172a; text-align: center; width: 30px;">#</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Scene</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Shot</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a; text-align: center;">Take</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a; text-align: center;">Status</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Cam Roll/ID</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Sound Roll</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a; text-align: center;">Sync</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Notes</th>
                 </tr>`
-                : `<tr style="background-color: #222226; color: #ffffff; text-align: left; font-size: 9px;">
-                    <th style="padding: 6px; border: 1px solid #111; text-align: center; width: 30px;">#</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Scene</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Shot</th>
-                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Take</th>
-                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Status</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Cam Roll/ID</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Sound Roll</th>
-                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Sync</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Lens / Specs</th>
-                    <th style="padding: 6px; border: 1px solid #111;">Notes</th>
+                : `<tr style="background-color: #1e293b; color: #ffffff; text-align: left; font-size: 9px;">
+                    <th style="padding: 6px; border: 1px solid #0f172a; text-align: center; width: 30px;">#</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Scene</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Shot</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a; text-align: center;">Take</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a; text-align: center;">Status</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Cam Roll/ID</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Sound Roll</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a; text-align: center;">Sync</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Lens / Specs</th>
+                    <th style="padding: 6px; border: 1px solid #0f172a;">Notes</th>
                 </tr>`;
 
             let tableRowsHtml = logsData.map((log, index) => {
                 const num = logsData.length - index;
                 const isCircled = log.status === 'Circled Take';
-                const rowBg = isCircled ? '#f0fdf4' : (index % 2 === 0 ? '#ffffff' : '#f9fafb');
+                const rowBg = isCircled ? '#f0fdf4' : (index % 2 === 0 ? '#ffffff' : '#f8fafc');
                 const statusBadge = isCircled 
                     ? '<span style="color:#15803d; font-weight:bold; border:1px solid #86efac; padding:1px 4px; border-radius:3px; background:#dcfce7;">CIRCLED</span>' 
                     : (log.status === 'No Good' ? '<span style="color:#b91c1c; font-weight:bold;">NG</span>' : (log.status || '-'));
 
                 if (isSound) {
-                    return `<tr style="background-color: ${rowBg}; border-bottom: 1px solid #e5e7eb; font-size: 8.5px; color: #000000;">
-                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center; font-weight: bold; color: #6b7280;">${num}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; font-weight: bold;">${log.scene}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; font-weight: bold; color: #b45309;">${log.shot}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center; font-weight: bold; color: #dc2626;">${log.take}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center;">${statusBadge}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; font-family: monospace;">${log.camRoll || '-'}<br><small style="color:#6b7280;">(${log.camID || 'A-Cam'})</small></td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; font-family: monospace; font-weight: bold;">${log.soundRoll || '-'}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center;">${log.soundSync || 'SYNC'}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; color: #1f2937;">${log.notes || ''}</td>
+                    return `<tr style="background-color: ${rowBg}; border-bottom: 1px solid #e2e8f0; font-size: 8.5px; color: #000000;">
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${num}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-weight: bold;">${log.scene}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-weight: bold; color: #d97706;">${log.shot}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #dc2626;">${log.take}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: center;">${statusBadge}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-family: monospace;">${log.camRoll || '-'}<br><small style="color:#64748b;">(${log.camID || 'A-Cam'})</small></td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold;">${log.soundRoll || '-'}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: center;">${log.soundSync || 'SYNC'}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; color: #0f172a;">${log.notes || ''}</td>
                     </tr>`;
                 } else {
-                    return `<tr style="background-color: ${rowBg}; border-bottom: 1px solid #e5e7eb; font-size: 8.5px; color: #000000;">
-                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center; font-weight: bold; color: #6b7280;">${num}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; font-weight: bold;">${log.scene}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; font-weight: bold; color: #b45309;">${log.shot}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center; font-weight: bold; color: #dc2626;">${log.take}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center;">${statusBadge}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; font-family: monospace;">${log.camRoll || '-'}<br><small style="color:#6b7280;">(${log.camID || 'A-Cam'})</small></td>
-                        <td style="border: 1px solid #d1d5db; padding: 5px; font-family: monospace;">${log.soundRoll || '-'}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center;">${log.soundSync || 'SYNC'}</td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db;">${log.lens || '-'}<br><small style="color:#4b5563;">@ ${log.camTStop || '-'}</small></td>
-                        <td style="padding: 5px; border: 1px solid #d1d5db; color: #1f2937;">${log.notes || ''}</td>
+                    return `<tr style="background-color: ${rowBg}; border-bottom: 1px solid #e2e8f0; font-size: 8.5px; color: #000000;">
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #64748b;">${num}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-weight: bold;">${log.scene}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-weight: bold; color: #d97706;">${log.shot}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold; color: #dc2626;">${log.take}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: center;">${statusBadge}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-family: monospace;">${log.camRoll || '-'}<br><small style="color:#64748b;">(${log.camID || 'A-Cam'})</small></td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; font-family: monospace;">${log.soundRoll || '-'}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: center;">${log.soundSync || 'SYNC'}</td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1;">${log.lens || '-'}<br><small style="color:#475569;">@ ${log.camTStop || '-'}</small></td>
+                        <td style="padding: 5px; border: 1px solid #cbd5e1; color: #0f172a;">${log.notes || ''}</td>
                     </tr>`;
                 }
             }).join('');
@@ -936,19 +943,19 @@
             container.innerHTML = `
                 <div style="font-family: Arial, sans-serif; color: #000000; background-color: #ffffff; width: 100%; box-sizing: border-box; padding: 5px;">
                     <!-- HEADER SECTION -->
-                    <div style="border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div style="border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
                         <div>
-                            <h1 style="margin: 0; font-size: 16px; font-weight: 900; letter-spacing: 0.5px; color: #111;">${reportTitle}</h1>
+                            <h1 style="margin: 0; font-size: 16px; font-weight: 900; letter-spacing: 0.5px; color: #0f172a;">${reportTitle}</h1>
                             <div style="font-size: 11px; font-weight: bold; color: #dc2626; margin-top: 2px;">PROJECT: ${prodName.toUpperCase()}</div>
                         </div>
-                        <div style="text-align: right; font-size: 9px; color: #333;">
+                        <div style="text-align: right; font-size: 9px; color: #334155;">
                             <div><b>DATE:</b> ${date || '-'} | <b>SHOOT DAY:</b> ${shootDay}</div>
                             <div><b>TOTAL TAKES LOGGED:</b> ${logsData.length}</div>
                         </div>
                     </div>
 
                     <!-- METADATA GRID -->
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 8.5px; background: #f3f4f6; border: 1px solid #d1d5db; padding: 6px; margin-bottom: 10px; border-radius: 4px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 8.5px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px; margin-bottom: 10px; border-radius: 4px; color: #0f172a;">
                         <div><b>DIRECTOR:</b> ${director}</div>
                         <div><b>DOP:</b> ${dop}</div>
                         <div><b>SOUND MIXER:</b> ${sndMixer}</div>
@@ -961,7 +968,7 @@
                     </table>
 
                     <!-- FOOTER SECTION -->
-                    <div style="margin-top: 12px; border-top: 1px solid #d1d5db; pt: 4px; display: flex; justify-content: space-between; font-size: 7.5px; color: #6b7280;">
+                    <div style="margin-top: 12px; border-top: 1px solid #cbd5e1; pt: 4px; display: flex; justify-content: space-between; font-size: 7.5px; color: #64748b;">
                         <span>Generated by Cine Report Pro System</span>
                         <span>Confidential - For Internal Production Use Only</span>
                     </div>
