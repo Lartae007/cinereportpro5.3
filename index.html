@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Cine Report Pro v1.1</title>
+    <title>Cine Report Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -13,7 +13,7 @@
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             width: 100%; height: 100%;
             background-color: #0d0d0f; color: #e0e0e0; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             overscroll-behavior: none !important;
             touch-action: pan-x pan-y;
             overflow: hidden; margin: 0; padding: 0;
@@ -29,8 +29,7 @@
         .scroll-custom::-webkit-scrollbar-thumb { background: #26262e; border-radius: 3px; }
 
         .glass-panel { background: #16161a; border: 1px solid #2a2a32; border-radius: 10px; }
-        .btn-press { transition: transform 0.1s ease, filter 0.1s ease; }
-        .btn-press:active { transform: scale(0.96); filter: brightness(1.2); }
+        .btn-press:active { transform: scale(0.96); }
         .tab-btn.active { border-bottom: 2px solid #ef4444; color: #ef4444; font-weight: bold; }
         input, select { background-color: #1a1a20; border: 1px solid #2d2d38; color: #fff; border-radius: 5px; padding: 2px 6px; }
         input:focus, select:focus { outline: none; border-color: #ef4444; }
@@ -40,19 +39,44 @@
             border: 1px solid #282832;
             transition: all 0.2s ease;
         }
-        .sidus-card:hover {
+        .sidus-card:active {
             border-color: #3b82f6;
-            box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
         }
 
-        /* รูปแบบเอกสารสรุป PDF สำหรับระบบพิมพ์มือถือ/คอมพิวเตอร์ */
+        /* รูปแบบเอกสาร PDF มาตรฐานกองถ่าย (แก้ปัญหาจอดำ และรองรับพิมพ์แนวนอน) */
         @media print {
-            body * { visibility: hidden !important; }
-            #mobilePrintContainer, #mobilePrintContainer * { visibility: visible !important; }
+            @page {
+                size: landscape;
+                margin: 8mm;
+            }
+            html, body { 
+                position: static !important;
+                width: 100% !important; 
+                height: auto !important;
+                min-height: 100% !important;
+                overflow: visible !important;
+                background-color: #ffffff !important; 
+                background: #ffffff !important;
+                color: #000000 !important; 
+            }
+            body > *:not(#mobilePrintContainer) { 
+                display: none !important; 
+            }
             #mobilePrintContainer { 
-                position: absolute; left: 0; top: 0; width: 100%; 
-                background: #ffffff !important; color: #000000 !important; 
-                padding: 15px; font-size: 10px;
+                display: block !important;
+                visibility: visible !important; 
+                position: relative !important;
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 100% !important; 
+                background: #ffffff !important; 
+                color: #000000 !important; 
+                padding: 0 !important; 
+                margin: 0 !important;
+            }
+            #mobilePrintContainer * { 
+                visibility: visible !important; 
             }
             .no-print { display: none !important; }
         }
@@ -60,29 +84,11 @@
 </head>
 <body class="flex flex-col text-xs select-none">
 
-    <!-- Toast Notification Container -->
-    <div id="toastContainer" class="fixed top-4 right-4 z-[110] flex flex-col gap-2 max-w-xs pointer-events-none"></div>
-
-    <!-- Reusable Confirmation Dialog Modal -->
-    <div id="customConfirmModal" class="fixed inset-0 bg-black/80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="glass-panel max-w-xs w-full p-4 space-y-3 border border-gray-700 text-center shadow-2xl">
-            <div id="confirmModalIcon" class="text-3xl text-yellow-500 mb-1">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <h3 id="confirmModalTitle" class="font-bold text-white text-sm">ยืนยันการทำรายการ</h3>
-            <p id="confirmModalText" class="text-xs text-gray-300"></p>
-            <div class="flex justify-center gap-2 pt-2">
-                <button id="confirmCancelBtn" class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-bold btn-press">ยกเลิก</button>
-                <button id="confirmOkBtn" class="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold btn-press">ตกลง</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 1. INITIAL LANDING SCREEN: PROJECT LAUNCHER (หน้าแรกเลือกโปรเจกต์) -->
+    <!-- 1. INITIAL LANDING SCREEN: PROJECT LAUNCHER -->
     <div id="view-project-launcher" class="absolute inset-0 bg-[#0d0d10] z-50 flex flex-col p-4 overflow-hidden">
         <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-800 shrink-0">
             <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white font-black shadow-lg shadow-red-900/50">
+                <div class="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white font-black">
                     <i class="fa-solid fa-clapperboard"></i>
                 </div>
                 <div>
@@ -266,13 +272,13 @@
                         </div>
 
                         <div>
-                            <div class="flex space-x-1 overflow-x-auto py-0.2 scroll-custom">
-                                <button type="button" onclick="appendCamFlag('Soft Focus')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Soft Focus</button>
-                                <button type="button" onclick="appendCamFlag('High Speed')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ High Speed</button>
-                                <button type="button" onclick="appendCamFlag('Steadicam')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Steadicam</button>
-                                <button type="button" onclick="appendCamFlag('Handheld')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Handheld</button>
-                                <button type="button" onclick="appendCamFlag('Gimbal')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Gimbal</button>
-                                <button type="button" onclick="appendCamFlag('Lens Flare')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Flare</button>
+                            <div class="flex space-x-1 overflow-x-auto py-0.2">
+                                <button type="button" onclick="appendCamFlag('Soft Focus')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Soft Focus</button>
+                                <button type="button" onclick="appendCamFlag('High Speed')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ High Speed</button>
+                                <button type="button" onclick="appendCamFlag('Steadicam')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Steadicam</button>
+                                <button type="button" onclick="appendCamFlag('Handheld')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Handheld</button>
+                                <button type="button" onclick="appendCamFlag('Gimbal')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Gimbal</button>
+                                <button type="button" onclick="appendCamFlag('Lens Flare')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Flare</button>
                             </div>
                         </div>
                     </div>
@@ -294,7 +300,7 @@
                             <div>
                                 <label class="text-[7px] text-gray-500 uppercase block">Audio Spec</label>
                                 <select id="soundAudioSpec" class="w-full text-[8px] py-0.5 bg-gray-800 border-gray-700">
-                                    <option value="48kHz / 24-bit">48kHz / 24-bit (Netflix Standard)</option>
+                                    <option value="48kHz / 24-bit">48kHz / 24-bit Standard</option>
                                     <option value="96kHz / 24-bit">96kHz / 24-bit</option>
                                 </select>
                             </div>
@@ -315,12 +321,12 @@
                         </div>
 
                         <div>
-                            <div class="flex space-x-1 overflow-x-auto py-0.2 scroll-custom">
-                                <button type="button" onclick="appendSoundFlag('Plane Noise')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Plane</button>
-                                <button type="button" onclick="appendSoundFlag('Gen Noise')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Generator</button>
-                                <button type="button" onclick="appendSoundFlag('Mic Bump')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Mic Bump</button>
-                                <button type="button" onclick="appendSoundFlag('Dialogue Overlap')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Overlap</button>
-                                <button type="button" onclick="appendSoundFlag('Cloth Rustle')" class="bg-gray-800 border border-gray-700 px-1.5 py-0.5 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Cloth Rustle</button>
+                            <div class="flex space-x-1 overflow-x-auto py-0.2">
+                                <button type="button" onclick="appendSoundFlag('Plane Noise')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Plane</button>
+                                <button type="button" onclick="appendSoundFlag('Gen Noise')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Generator</button>
+                                <button type="button" onclick="appendSoundFlag('Mic Bump')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Mic Bump</button>
+                                <button type="button" onclick="appendSoundFlag('Dialogue Overlap')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Overlap</button>
+                                <button type="button" onclick="appendSoundFlag('Cloth Rustle')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Cloth Rustle</button>
                             </div>
                         </div>
                     </div>
@@ -352,25 +358,24 @@
             <div id="view-log" class="absolute inset-0 flex flex-col p-2 bg-[#0f0f11] hidden">
                 <div class="flex flex-col gap-1.5 mb-2 shrink-0 border-b border-gray-800 pb-2">
                     <div class="flex justify-between items-center">
-                        <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Netflix Standard Exports (v1.1)</h2>
+                        <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">PRODUCTION LOG EXPORTS (v1.1)</h2>
                         <span class="text-[8px] text-gray-500">กดเพื่อส่งออก/แชร์ไฟล์บนมือถือ</span>
                     </div>
                     
-                    <!-- ปุ่มส่งออก 5 รูปแบบมาตรฐานสากล -->
                     <div class="grid grid-cols-5 gap-1">
-                        <button onclick="exportPDF('master')" class="bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="exportPDF('master')" class="bg-red-950 text-red-300 border border-red-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-file-pdf"></i> Master PDF
                         </button>
-                        <button onclick="exportCSV('master')" class="bg-blue-950 hover:bg-blue-900 text-blue-300 border border-blue-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="exportCSV('master')" class="bg-blue-950 text-blue-300 border border-blue-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-file-csv"></i> Master CSV
                         </button>
-                        <button onclick="exportPDF('sound')" class="bg-purple-950 hover:bg-purple-900 text-purple-200 border border-purple-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="exportPDF('sound')" class="bg-purple-950 text-purple-200 border border-purple-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-file-pdf"></i> Sound PDF
                         </button>
-                        <button onclick="exportCSV('sound')" class="bg-purple-900/40 hover:bg-purple-900/70 text-purple-300 border border-purple-700/60 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="exportCSV('sound')" class="bg-purple-900/40 text-purple-300 border border-purple-700/60 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-file-csv"></i> Sound CSV
                         </button>
-                        <button onclick="exportALE()" class="bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
+                        <button onclick="exportALE()" class="bg-amber-950 text-amber-300 border border-amber-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
                             <i class="fa-solid fa-film"></i> Avid ALE
                         </button>
                     </div>
@@ -398,7 +403,7 @@
                     <div id="emptyLogMsg" class="text-center text-gray-600 py-8 italic hidden">No Takes Logged in this Project</div>
                 </div>
 
-                <div class="fixed bottom-4 right-4 flex flex-col gap-2 z-40">
+                <div class="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
                     <button onclick="scrollLogTo('top')" class="w-8 h-8 bg-gray-800/90 backdrop-blur border border-gray-700 rounded-full text-gray-400 hover:text-white shadow-lg flex items-center justify-center btn-press">
                         <i class="fa-solid fa-arrow-up"></i>
                     </button>
@@ -410,7 +415,7 @@
         </main>
     </div>
 
-    <!-- Container สำหรับสั่งพิมพ์ PDF ผ่านระบบเบราว์เซอร์ -->
+    <!-- Container สำหรับสั่งพิมพ์ PDF ผ่านมือถือ (Clean White Paper Layout) -->
     <div id="mobilePrintContainer" class="hidden"></div>
 
     <!-- Modals (Scene & Shot) -->
@@ -452,57 +457,6 @@
 
     <!-- SCRIPT ENGINE -->
     <script>
-        // Custom UI Modal and Toast helpers (Replacing native alert/confirm)
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            const colorClass = type === 'error' ? 'bg-red-950 border-red-600 text-red-200' : 'bg-gray-900 border-blue-500 text-white';
-            toast.className = `p-3 rounded-lg border text-xs shadow-xl flex items-center justify-between transition-all duration-300 opacity-0 transform -translate-y-2 ${colorClass}`;
-            toast.innerHTML = `<span><i class="${type === 'error' ? 'fa-solid fa-circle-exclamation text-red-400' : 'fa-solid fa-circle-info text-blue-400'} mr-2"></i>${message}</span>`;
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.remove('opacity-0', '-translate-y-2');
-            }, 10);
-            
-            setTimeout(() => {
-                toast.classList.add('opacity-0', '-translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function showConfirm(message, title = 'ยืนยันการทำรายการ') {
-            return new Promise((resolve) => {
-                const modal = document.getElementById('customConfirmModal');
-                document.getElementById('confirmModalTitle').innerText = title;
-                document.getElementById('confirmModalText').innerText = message;
-                modal.classList.remove('hidden');
-
-                const okBtn = document.getElementById('confirmOkBtn');
-                const cancelBtn = document.getElementById('confirmCancelBtn');
-
-                const handleOk = () => {
-                    cleanup();
-                    modal.classList.add('hidden');
-                    resolve(true);
-                };
-
-                const handleCancel = () => {
-                    cleanup();
-                    modal.classList.add('hidden');
-                    resolve(false);
-                };
-
-                const cleanup = () => {
-                    okBtn.removeEventListener('click', handleOk);
-                    cancelBtn.removeEventListener('click', handleCancel);
-                };
-
-                okBtn.addEventListener('click', handleOk);
-                cancelBtn.addEventListener('click', handleCancel);
-            });
-        }
-
         let appData = JSON.parse(localStorage.getItem('cine_app_data'));
         if (!appData) {
             appData = {
@@ -575,14 +529,13 @@
 
         function createNewProject() {
             const name = document.getElementById('newProjectName').value.trim();
-            if(!name) return showToast('กรุณาพิมพ์ชื่อโปรเจกต์ใหม่', 'error');
+            if(!name) return alert('กรุณาพิมพ์ชื่อโปรเจกต์');
             
             const newProj = { id: 'proj_' + Date.now(), name: name, logs: [], state: {} };
             appData.projects.push(newProj);
             appData.currentProjectId = newProj.id;
             saveAppData();
             document.getElementById('newProjectName').value = '';
-            showToast(`สร้างโปรเจกต์ "${name}" สำเร็จ`);
             selectProjectAndOpen(newProj.id);
         }
 
@@ -596,17 +549,14 @@
             switchMainTab('input');
         }
 
-        async function deleteProject(id, e) {
+        function deleteProject(id, e) {
             e.stopPropagation();
-            if(appData.projects.length <= 1) return showToast('ต้องมีอย่างน้อย 1 โปรเจกต์ในระบบ', 'error');
-            
-            const confirmed = await showConfirm('ลบโปรเจกต์นี้ถาวร? ข้อมูล Take ทั้งหมดในโปรเจกต์จะถูกลบ', 'ยืนยันการลบโปรเจกต์');
-            if(confirmed) {
+            if(appData.projects.length <= 1) return alert('ต้องมีอย่างน้อย 1 โปรเจกต์ในระบบ');
+            if(confirm('ลบโปรเจกต์นี้ถาวร? ข้อมูล Take ทั้งหมดจะถูกลบ')) {
                 appData.projects = appData.projects.filter(p => p.id !== id);
                 if(appData.currentProjectId === id) appData.currentProjectId = appData.projects[0].id;
                 saveAppData();
                 renderProjectGrid();
-                showToast('ลบโปรเจกต์เรียบร้อยแล้ว');
             }
         }
 
@@ -620,12 +570,12 @@
 
             if(project.state) {
                 stateFields.forEach(id => {
-                    if(document.getElementById(id) && project.state[id] !== undefined) document.getElementById(id).value = project.state[id];
+                    if(document.getElementById(id) && project.state[id]) document.getElementById(id).value = project.state[id];
                 });
                 if(project.state.prefix) document.getElementById('prefixBtn').innerText = project.state.prefix;
                 if(project.state.shotMode) {
                     shotMode = project.state.shotMode;
-                    document.getElementById('shotModeBtn').innerText = `Shot Mode: ${shotMode === 'letter' ? 'Letters (A, B, C...)' : 'Numbers (1, 2, 3...)'}`;
+                    document.getElementById('shotModeBtn').innerText = `Shot Mode: ${shotMode === 'letter' ? 'Letters' : 'Numbers'}`;
                 }
                 if(project.state.activeLens) document.getElementById('activeLens').value = project.state.activeLens;
                 if(project.state.camND) document.getElementById('camND').value = project.state.camND;
@@ -710,19 +660,8 @@
             saveState();
         }
         function updateTake(c) { let v = parseInt(document.getElementById('takeVal').value)||1; document.getElementById('takeVal').value = Math.max(1, v + c); saveState(); }
-        
-        function setStatus(s, b) { 
-            document.querySelectorAll('.status-btn').forEach(x => x.classList.remove('ring-2', 'ring-red-500')); 
-            b.classList.add('ring-2', 'ring-red-500'); 
-            document.getElementById('currentStatus').value = s; 
-        }
-        
-        function setSoundSync(s, b) { 
-            document.querySelectorAll('.sound-sync-btn').forEach(x => x.className = 'sound-sync-btn bg-gray-800 border border-gray-700 text-gray-300 px-1 py-0.5 text-[8px] rounded font-bold btn-press'); 
-            b.className = 'sound-sync-btn bg-red-900 border border-red-500 text-white px-1 py-0.5 text-[8px] rounded font-bold btn-press'; 
-            document.getElementById('soundSyncVal').value = s; 
-            saveState(); 
-        }
+        function setStatus(s, b) { document.querySelectorAll('.status-btn').forEach(x => x.classList.remove('ring-2', 'ring-red-500')); b.classList.add('ring-2', 'ring-red-500'); document.getElementById('currentStatus').value = s; }
+        function setSoundSync(s, b) { document.querySelectorAll('.sound-sync-btn').forEach(x => x.className = 'sound-sync-btn bg-gray-800 border border-gray-700 text-gray-300 px-1 py-0.5 text-[8px] rounded font-bold btn-press'); b.className = 'sound-sync-btn bg-red-900 border border-red-500 text-white px-1 py-0.5 text-[8px] rounded font-bold btn-press'; document.getElementById('soundSyncVal').value = s; saveState(); }
 
         function appendCamFlag(f) { const i = document.getElementById('takeNote'); i.value = i.value.trim()==='' ? f : i.value + ', ' + f; }
         function appendSoundFlag(f) { const i = document.getElementById('takeNote'); i.value = i.value.trim()==='' ? f : i.value + ', ' + f; }
@@ -792,7 +731,6 @@
             document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('ring-2', 'ring-red-500'));
             renderLogs();
             updateTake(1);
-            showToast(`บันทึก Take ${logEntry.take} (${logEntry.scene}${logEntry.shot}) เรียบร้อย`);
         }
 
         function renderLogs() {
@@ -823,33 +761,22 @@
                     <td class="p-1.5"><span class="px-1 py-0.2 rounded text-[8px] font-bold ${log.soundSync === 'SYNC' ? 'bg-green-950 text-green-400' : 'bg-red-950 text-red-400'}">${log.soundSync}</span></td>
                     <td class="p-1.5 text-gray-300">${log.lens || '-'} @ ${log.camTStop || '-'}</td>
                     <td class="p-1.5"><input type="text" value="${log.notes || ''}" onchange="updateLogNote(${index}, this.value)" class="w-full bg-transparent border-b border-gray-800 text-xs text-gray-300 py-0.5"></td>
-                    <td class="p-1.5 text-center"><button onclick="deleteLog(${index})" class="text-gray-600 hover:text-red-500 p-1"><i class="fa-solid fa-trash-can"></i></button></td>
+                    <td class="p-1.5 text-center"><button onclick="deleteLog(${index})" class="text-gray-600 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button></td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
         function updateLogNote(index, value) { logsData[index].notes = value; saveAppData(); }
-        
-        async function deleteLog(index) { 
-            const confirmed = await showConfirm("ลบ Take นี้ออกจากรายการหรือไม่?", "ยืนยันการลบ Take");
-            if(confirmed) { 
-                logsData.splice(index, 1); 
-                saveAppData(); 
-                renderLogs(); 
-                showToast('ลบ Take เรียบร้อยแล้ว');
-            } 
-        }
-
+        function deleteLog(index) { if(confirm("ลบ Take นี้?")) { logsData.splice(index, 1); saveAppData(); renderLogs(); } }
         function scrollLogTo(d) { const c = document.getElementById('logTableContainer'); c.scrollTo({ top: d==='top'?0:c.scrollHeight, behavior:'smooth' }); }
 
         // =========================================================================
-        // 🚀 EXPORT ENGINE (v1.1 Native Share & Print System)
+        // 🚀 EXPORT ENGINE (v1.1 Standard Print & Export System)
         // =========================================================================
 
-        // 1. ส่งออก CSV (มี Web Share Fallback รองรับมือถือ 100%)
         async function exportCSV(mode = 'master') {
-            if (!logsData || logsData.length === 0) return showToast('ไม่มีข้อมูล Take ในโปรเจกต์นี้', 'error');
+            if (!logsData || logsData.length === 0) return alert('ไม่มีข้อมูล Take ในโปรเจกต์นี้');
 
             const proj = getCurrentProject();
             const projName = proj.name || 'Project';
@@ -895,12 +822,10 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showToast('ส่งออกไฟล์ CSV เรียบร้อย');
         }
 
-        // 2. ส่งออก ALE File (Avid Log Exchange มาตรฐานระบบตัดต่อ Avid / DaVinci Resolve)
         async function exportALE() {
-            if (!logsData || logsData.length === 0) return showToast('ไม่มีข้อมูล Take สำหรับสร้าง ALE', 'error');
+            if (!logsData || logsData.length === 0) return alert('ไม่มีข้อมูล Take สำหรับสร้าง ALE');
 
             const proj = getCurrentProject();
             const projName = proj.name || 'PROJECT';
@@ -929,72 +854,117 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showToast('ส่งออกไฟล์ Avid ALE เรียบร้อย');
         }
 
-        // 3. ส่งออก PDF (ใช้ Native Device Print Manager บนโทรศัพท์ 100%)
+        // ฟังก์ชันสร้างหน้าพิมพ์ PDF มาตรฐานกองถ่ายสากล (พื้นหลังขาว คมชัด 100%)
         function exportPDF(mode = 'master') {
-            if (!logsData || logsData.length === 0) return showToast('ไม่มีข้อมูล Take ในโปรเจกต์นี้', 'error');
+            if (!logsData || logsData.length === 0) return alert('ไม่มีข้อมูล Take ในโปรเจกต์นี้');
 
             const proj = getCurrentProject();
             const prodName = document.getElementById('prodName').value || proj.name || 'Project';
             const date = document.getElementById('shootDate').value || (proj.state ? proj.state.shootDate : '');
+            const shootDay = document.getElementById('shootDay').value || 'Day 1';
             const director = document.getElementById('director').value || '-';
             const dop = document.getElementById('dop').value || '-';
             const sndMixer = document.getElementById('sndMixer').value || '-';
 
             const isSound = mode === 'sound';
-            const title = isSound ? `SOUND REPORT - ${prodName.toUpperCase()}` : `MASTER CINE REPORT - ${prodName.toUpperCase()}`;
+            const reportTitle = isSound ? 'DAILY SOUND REPORT' : 'DAILY MASTER CINE REPORT';
 
             let tableHeaderHtml = isSound
-                ? `<tr><th style="border:1px solid #000;padding:4px;">#</th><th style="border:1px solid #000;padding:4px;">Scene</th><th style="border:1px solid #000;padding:4px;">Shot</th><th style="border:1px solid #000;padding:4px;">Take</th><th style="border:1px solid #000;padding:4px;">Status</th><th style="border:1px solid #000;padding:4px;">Cam ID/Roll</th><th style="border:1px solid #000;padding:4px;">Sound Roll</th><th style="border:1px solid #000;padding:4px;">Sync</th><th style="border:1px solid #000;padding:4px;">Notes</th></tr>`
-                : `<tr><th style="border:1px solid #000;padding:4px;">#</th><th style="border:1px solid #000;padding:4px;">Scene</th><th style="border:1px solid #000;padding:4px;">Shot</th><th style="border:1px solid #000;padding:4px;">Take</th><th style="border:1px solid #000;padding:4px;">Status</th><th style="border:1px solid #000;padding:4px;">Cam Roll/ID</th><th style="border:1px solid #000;padding:4px;">Sound Roll</th><th style="border:1px solid #000;padding:4px;">Sync</th><th style="border:1px solid #000;padding:4px;">Lens</th><th style="border:1px solid #000;padding:4px;">Notes</th></tr>`;
+                ? `<tr style="background-color: #222226; color: #ffffff; text-align: left; font-size: 9px;">
+                    <th style="padding: 6px; border: 1px solid #111; text-align: center; width: 30px;">#</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Scene</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Shot</th>
+                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Take</th>
+                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Status</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Cam Roll/ID</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Sound Roll</th>
+                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Sync</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Notes</th>
+                </tr>`
+                : `<tr style="background-color: #222226; color: #ffffff; text-align: left; font-size: 9px;">
+                    <th style="padding: 6px; border: 1px solid #111; text-align: center; width: 30px;">#</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Scene</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Shot</th>
+                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Take</th>
+                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Status</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Cam Roll/ID</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Sound Roll</th>
+                    <th style="padding: 6px; border: 1px solid #111; text-align: center;">Sync</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Lens / Specs</th>
+                    <th style="padding: 6px; border: 1px solid #111;">Notes</th>
+                </tr>`;
 
             let tableRowsHtml = logsData.map((log, index) => {
                 const num = logsData.length - index;
+                const isCircled = log.status === 'Circled Take';
+                const rowBg = isCircled ? '#f0fdf4' : (index % 2 === 0 ? '#ffffff' : '#f9fafb');
+                const statusBadge = isCircled 
+                    ? '<span style="color:#15803d; font-weight:bold; border:1px solid #86efac; padding:1px 4px; border-radius:3px; background:#dcfce7;">CIRCLED</span>' 
+                    : (log.status === 'No Good' ? '<span style="color:#b91c1c; font-weight:bold;">NG</span>' : (log.status || '-'));
+
                 if (isSound) {
-                    return `<tr>
-                        <td style="border:1px solid #ccc;padding:4px;">${num}</td>
-                        <td style="border:1px solid #ccc;padding:4px;"><b>${log.scene}</b></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.shot}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.take}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.status || '-'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.camRoll || '-'}<br><small>(${log.camID || 'A-Cam'})</small></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.soundRoll || '-'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.soundSync || 'SYNC'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.notes || ''}</td>
+                    return `<tr style="background-color: ${rowBg}; border-bottom: 1px solid #e5e7eb; font-size: 8.5px; color: #000000;">
+                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center; font-weight: bold; color: #6b7280;">${num}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; font-weight: bold;">${log.scene}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; font-weight: bold; color: #b45309;">${log.shot}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center; font-weight: bold; color: #dc2626;">${log.take}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center;">${statusBadge}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; font-family: monospace;">${log.camRoll || '-'}<br><small style="color:#6b7280;">(${log.camID || 'A-Cam'})</small></td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; font-family: monospace; font-weight: bold;">${log.soundRoll || '-'}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center;">${log.soundSync || 'SYNC'}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; color: #1f2937;">${log.notes || ''}</td>
                     </tr>`;
                 } else {
-                    return `<tr>
-                        <td style="border:1px solid #ccc;padding:4px;">${num}</td>
-                        <td style="border:1px solid #ccc;padding:4px;"><b>${log.scene}</b></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.shot}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.take}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.status || '-'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.camRoll || '-'}<br><small>(${log.camID || 'A-Cam'})</small></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.soundRoll || '-'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.soundSync || 'SYNC'}</td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.lens || '-'}<br><small>@ ${log.camTStop || '-'}</small></td>
-                        <td style="border:1px solid #ccc;padding:4px;">${log.notes || ''}</td>
+                    return `<tr style="background-color: ${rowBg}; border-bottom: 1px solid #e5e7eb; font-size: 8.5px; color: #000000;">
+                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center; font-weight: bold; color: #6b7280;">${num}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; font-weight: bold;">${log.scene}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; font-weight: bold; color: #b45309;">${log.shot}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center; font-weight: bold; color: #dc2626;">${log.take}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center;">${statusBadge}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; font-family: monospace;">${log.camRoll || '-'}<br><small style="color:#6b7280;">(${log.camID || 'A-Cam'})</small></td>
+                        <td style="border: 1px solid #d1d5db; padding: 5px; font-family: monospace;">${log.soundRoll || '-'}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; text-align: center;">${log.soundSync || 'SYNC'}</td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db;">${log.lens || '-'}<br><small style="color:#4b5563;">@ ${log.camTStop || '-'}</small></td>
+                        <td style="padding: 5px; border: 1px solid #d1d5db; color: #1f2937;">${log.notes || ''}</td>
                     </tr>`;
                 }
             }).join('');
 
             const container = document.getElementById('mobilePrintContainer');
             container.innerHTML = `
-                <div style="font-family: Arial, sans-serif; color: #000;">
-                    <h2 style="margin: 0 0 6px 0; font-size: 14px;">${title}</h2>
-                    <div style="font-size: 9px; margin-bottom: 10px; color: #333;">
-                        <span><b>Date:</b> ${date || '-'}</span> | 
-                        <span><b>Director:</b> ${director}</span> | 
-                        <span><b>DoP:</b> ${dop}</span> | 
-                        <span><b>Sound Mixer:</b> ${sndMixer}</span> | 
-                        <span><b>Total Takes:</b> ${logsData.length}</span>
+                <div style="font-family: Arial, sans-serif; color: #000000; background-color: #ffffff; width: 100%; box-sizing: border-box; padding: 5px;">
+                    <!-- HEADER SECTION -->
+                    <div style="border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div>
+                            <h1 style="margin: 0; font-size: 16px; font-weight: 900; letter-spacing: 0.5px; color: #111;">${reportTitle}</h1>
+                            <div style="font-size: 11px; font-weight: bold; color: #dc2626; margin-top: 2px;">PROJECT: ${prodName.toUpperCase()}</div>
+                        </div>
+                        <div style="text-align: right; font-size: 9px; color: #333;">
+                            <div><b>DATE:</b> ${date || '-'} | <b>SHOOT DAY:</b> ${shootDay}</div>
+                            <div><b>TOTAL TAKES LOGGED:</b> ${logsData.length}</div>
+                        </div>
                     </div>
-                    <table style="width: 100%; border-collapse: collapse; font-size: 9px; text-align: left;">
+
+                    <!-- METADATA GRID -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 8.5px; background: #f3f4f6; border: 1px solid #d1d5db; padding: 6px; margin-bottom: 10px; border-radius: 4px;">
+                        <div><b>DIRECTOR:</b> ${director}</div>
+                        <div><b>DOP:</b> ${dop}</div>
+                        <div><b>SOUND MIXER:</b> ${sndMixer}</div>
+                    </div>
+
+                    <!-- TABLE SECTION -->
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; background: #ffffff;">
                         <thead>${tableHeaderHtml}</thead>
                         <tbody>${tableRowsHtml}</tbody>
                     </table>
+
+                    <!-- FOOTER SECTION -->
+                    <div style="margin-top: 12px; border-top: 1px solid #d1d5db; pt: 4px; display: flex; justify-content: space-between; font-size: 7.5px; color: #6b7280;">
+                        <span>Generated by Cine Report Pro System</span>
+                        <span>Confidential - For Internal Production Use Only</span>
+                    </div>
                 </div>
             `;
 
