@@ -44,48 +44,37 @@
             box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
         }
 
-        /* รูปแบบเอกสาร PDF มาตรฐานกองถ่าย (แก้ไขปัญหาหน้าจอดำ และบังคับพิมพ์แนวนอนขาวบริสุทธิ์) */
+        /* รูปแบบเอกสาร PDF สรุปตารางมาตรฐานสากล (บังคับพื้นหลังขาว 100% แนวลอน) */
         @media print {
             @page {
                 size: landscape;
-                margin: 6mm;
-            }
-            *, *::before, *::after {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+                margin: 5mm;
             }
             html, body { 
                 position: static !important;
                 width: 100% !important; 
                 height: auto !important;
-                min-height: 100% !important;
                 overflow: visible !important;
                 background: #ffffff !important; 
                 background-color: #ffffff !important; 
                 color: #000000 !important; 
-                margin: 0 !important;
-                padding: 0 !important;
             }
-            body > *:not(#mobilePrintContainer) { 
+            #view-project-launcher, #view-workspace, .no-print { 
                 display: none !important; 
             }
             #mobilePrintContainer { 
                 display: block !important;
                 visibility: visible !important; 
-                position: absolute !important;
-                left: 0 !important; 
-                top: 0 !important; 
+                position: relative !important;
                 width: 100% !important; 
                 background: #ffffff !important; 
-                background-color: #ffffff !important;
                 color: #000000 !important; 
-                padding: 0 !important; 
                 margin: 0 !important;
+                padding: 0 !important;
             }
             #mobilePrintContainer * { 
                 visibility: visible !important; 
             }
-            .no-print { display: none !important; }
         }
     </style>
 </head>
@@ -422,8 +411,8 @@
         </main>
     </div>
 
-    <!-- Container สำหรับสั่งพิมพ์ PDF ผ่านมือถือ (Clean White Paper Layout) -->
-    <div id="mobilePrintContainer" class="hidden"></div>
+    <!-- Container สำหรับสั่งพิมพ์ PDF ผ่านมือถือ -->
+    <div id="mobilePrintContainer" style="display: none;"></div>
 
     <!-- Modals (Scene & Shot) -->
     <div id="sceneModal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center backdrop-blur-sm">
@@ -464,14 +453,26 @@
 
     <!-- SCRIPT ENGINE -->
     <script>
-        let appData = JSON.parse(localStorage.getItem('cine_app_data'));
-        if (!appData) {
+        // SAFE LOCALSTORAGE WRAPPER
+        function getSafeItem(key) {
+            try { return localStorage.getItem(key); } catch(e) { return null; }
+        }
+        function setSafeItem(key, val) {
+            try { localStorage.setItem(key, val); } catch(e) {}
+        }
+
+        let appData = null;
+        try {
+            appData = JSON.parse(getSafeItem('cine_app_data'));
+        } catch(e) { appData = null; }
+
+        if (!appData || !appData.projects || !appData.projects.length) {
             appData = {
                 projects: [{
                     id: 'proj_' + Date.now(),
                     name: 'Default Project',
-                    logs: JSON.parse(localStorage.getItem('cine_logs')) || [],
-                    state: JSON.parse(localStorage.getItem('cine_state')) || {}
+                    logs: [],
+                    state: {}
                 }],
                 currentProjectId: null
             };
@@ -487,7 +488,7 @@
             'soundSyncVal', 'soundAudioSpec', 'soundTCFps', 'soundTrackMap'
         ];
 
-        function saveAppData() { localStorage.setItem('cine_app_data', JSON.stringify(appData)); }
+        function saveAppData() { setSafeItem('cine_app_data', JSON.stringify(appData)); }
         function getCurrentProject() { return appData.projects.find(p => p.id === appData.currentProjectId) || appData.projects[0]; }
 
         window.onload = () => { openProjectLauncher(); };
@@ -779,7 +780,7 @@
         function scrollLogTo(d) { const c = document.getElementById('logTableContainer'); c.scrollTo({ top: d==='top'?0:c.scrollHeight, behavior:'smooth' }); }
 
         // =========================================================================
-        // 🚀 EXPORT ENGINE (v1.1 Standard Print & Export System)
+        // 🚀 EXPORT ENGINE (Stable Print & Export System)
         // =========================================================================
 
         async function exportCSV(mode = 'master') {
@@ -863,7 +864,7 @@
             document.body.removeChild(link);
         }
 
-        // ฟังก์ชันสร้างหน้าพิมพ์ PDF มาตรฐานกองถ่ายสากล (พื้นหลังขาว คมชัด 100%)
+        // ระบบสรุปและส่งออก PDF ตารางรายงานการถ่ายทำ (ไม่มืด ไม่ดำ อ่านง่าย)
         function exportPDF(mode = 'master') {
             if (!logsData || logsData.length === 0) return alert('ไม่มีข้อมูล Take ในโปรเจกต์นี้');
 
@@ -968,7 +969,7 @@
                     </table>
 
                     <!-- FOOTER SECTION -->
-                    <div style="margin-top: 12px; border-top: 1px solid #cbd5e1; pt: 4px; display: flex; justify-content: space-between; font-size: 7.5px; color: #64748b;">
+                    <div style="margin-top: 12px; border-top: 1px solid #cbd5e1; padding-top: 4px; display: flex; justify-content: space-between; font-size: 7.5px; color: #64748b;">
                         <span>Generated by Cine Report Pro System</span>
                         <span>Confidential - For Internal Production Use Only</span>
                     </div>
