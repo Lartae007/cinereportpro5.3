@@ -1,917 +1,683 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-black text-gray-300">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cine Report Pro</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
     <style>
-        html, body { 
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            width: 100%; height: 100%;
-            background-color: #0d0d0f; color: #e0e0e0; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            overscroll-behavior: none !important;
-            touch-action: pan-x pan-y;
-            overflow: hidden; margin: 0; padding: 0;
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #050505; 
+            overscroll-behavior-y: none;
         }
+        .font-mono { font-family: 'Roboto Mono', monospace; }
         
-        .scroll-custom {
-            overflow-y: auto !important; 
-            -webkit-overflow-scrolling: touch; 
-            overscroll-behavior: contain !important;
-            scroll-behavior: smooth;
+        /* Mobile Scrollbars */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        
+        .arri-input {
+            background: #111; border: 1px solid #333; color: #fff;
+            padding: 0.5rem; border-radius: 6px;
+            font-family: 'Roboto Mono', monospace;
+            text-align: center; outline: none; transition: border-color 0.2s;
         }
-        .scroll-custom::-webkit-scrollbar { width: 4px; height: 4px; }
-        .scroll-custom::-webkit-scrollbar-thumb { background: #26262e; border-radius: 3px; }
+        .arri-input:focus { border-color: #dc2626; }
+        
+        .arri-panel {
+            background: #0a0a0c; border: 1px solid #1f1f22;
+            border-radius: 12px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
 
-        .glass-panel { background: #16161a; border: 1px solid #2a2a32; border-radius: 10px; }
-        .btn-press:active { transform: scale(0.96); }
-        .tab-btn.active { border-bottom: 2px solid #ef4444; color: #ef4444; font-weight: bold; }
-        input, select { background-color: #1a1a20; border: 1px solid #2d2d38; color: #fff; border-radius: 5px; padding: 2px 6px; }
-        input:focus, select:focus { outline: none; border-color: #ef4444; }
+        .btn-press { transition: transform 0.1s, background-color 0.2s, border-color 0.2s; }
+        .btn-press:active { transform: scale(0.95); }
 
-        .sidus-card {
-            background: linear-gradient(145deg, #18181c 0%, #101014 100%);
-            border: 1px solid #282832;
-            transition: all 0.2s ease;
+        /* Status Toggles */
+        .status-toggle { border: 2px solid #222; transition: all 0.2s; }
+        .status-toggle.active-print { background: #064e3b; border-color: #10b981; color: #34d399; }
+        .status-toggle.active-hold { background: #422006; border-color: #d97706; color: #fcd34d; }
+        .status-toggle.active-ng { background: #7f1d1d; border-color: #ef4444; color: #fca5a5; }
+        .status-toggle.active-fs { background: #450a0a; border-color: #f97316; color: #fdba74; }
+
+        @keyframes flashScreen {
+            0% { background-color: rgba(220, 38, 38, 0.5); }
+            100% { background-color: transparent; }
         }
-        .sidus-card:active {
-            border-color: #3b82f6;
-            box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
-        }
+        .flash-active { animation: flashScreen 0.4s ease-out; }
+        .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
     </style>
 </head>
-<body class="flex flex-col text-xs select-none">
+<body class="h-screen flex flex-col overflow-hidden text-sm">
 
-    <!-- 1. INITIAL LANDING SCREEN: PROJECT LAUNCHER (หน้าแรกก่อนเข้าใช้งาน) -->
-    <div id="view-project-launcher" class="absolute inset-0 bg-[#0d0d10] z-50 flex flex-col p-4 overflow-hidden">
-        <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-800 shrink-0">
-            <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white font-black">
-                    <i class="fa-solid fa-clapperboard"></i>
+    <div id="flashOverlay" class="fixed inset-0 pointer-events-none z-[100]"></div>
+
+    <!-- APP HEADER -->
+    <header class="bg-black border-b border-zinc-800 p-3 shrink-0 flex justify-between items-center z-20">
+        <div class="flex items-center gap-2 flex-1">
+            <i class="fa-solid fa-video text-red-600 text-xl"></i>
+            <input type="text" id="project-name" value="PROJECT NAME" class="bg-transparent text-white font-black text-base sm:text-lg tracking-widest outline-none w-full uppercase placeholder-zinc-700">
+        </div>
+        <div class="flex items-center gap-2 bg-zinc-950 px-2 py-1 rounded border border-zinc-800 shrink-0">
+            <div id="master-tc" class="font-mono text-base sm:text-lg font-bold text-red-500 tracking-widest">00:00:00:00</div>
+            <select id="fps-select" class="bg-zinc-900 border border-zinc-700 text-white rounded px-1 py-0.5 text-[10px] font-bold outline-none ml-1">
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="30">30</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- MAIN APP NAVIGATION -->
+    <div class="flex border-b border-zinc-800 bg-[#111] shrink-0 sticky top-0 z-20">
+        <button id="btn-tab-action" onclick="switchMainTab('tab-action')" class="flex-1 py-3 text-xs font-bold border-b-2 border-red-500 text-red-500 uppercase tracking-widest transition-colors">Slate</button>
+        <button id="btn-tab-camera" onclick="switchMainTab('tab-camera')" class="flex-1 py-3 text-xs font-bold border-b-2 border-transparent text-zinc-500 uppercase tracking-widest transition-colors">Camera</button>
+        <button id="btn-tab-sound" onclick="switchMainTab('tab-sound')" class="flex-1 py-3 text-xs font-bold border-b-2 border-transparent text-zinc-500 uppercase tracking-widest transition-colors">Sound</button>
+        <button id="btn-tab-logs" onclick="switchMainTab('tab-logs')" class="flex-1 py-3 text-xs font-bold border-b-2 border-transparent text-zinc-500 uppercase tracking-widest transition-colors">Logs</button>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 overflow-y-auto bg-[#050505] relative">
+        
+        <!-- TAB 1: SLATE ACTION -->
+        <div id="tab-action" class="p-4 flex flex-col gap-4">
+            
+            <!-- Scene & Shot -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="arri-panel p-3 flex flex-col items-center shadow-lg">
+                    <label class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-2">Scene</label>
+                    <div class="flex items-center gap-1 w-full">
+                        <button onclick="updateScene(-1)" class="w-10 h-14 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-bold text-xl btn-press">-</button>
+                        <input type="text" id="val-scene" value="1" onclick="openModal('sceneModal')" readonly class="flex-1 h-14 text-2xl font-bold text-center bg-zinc-900 border border-zinc-700 rounded-lg cursor-pointer w-full px-1">
+                        <button onclick="updateScene(1)" class="w-10 h-14 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-bold text-xl btn-press">+</button>
+                    </div>
                 </div>
+                
+                <div class="arri-panel p-3 flex flex-col items-center shadow-lg">
+                    <label class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-2">Shot</label>
+                    <div class="flex items-center gap-1 w-full mb-2">
+                        <button onclick="updateShot(-1)" class="w-10 h-14 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-bold text-xl btn-press">-</button>
+                        <input type="text" id="val-shot" value="A" onclick="openModal('shotModal')" readonly class="flex-1 h-14 text-2xl font-bold text-center text-amber-500 bg-zinc-900 border border-zinc-700 rounded-lg cursor-pointer w-full px-1">
+                        <button onclick="updateShot(1)" class="w-10 h-14 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-bold text-xl btn-press">+</button>
+                    </div>
+                    <button onclick="toggleShotMode()" id="shotModeBtn" class="w-full bg-zinc-800 hover:bg-zinc-700 py-1.5 rounded text-[9px] font-bold text-zinc-300 uppercase tracking-widest btn-press">Mode: Letter</button>
+                </div>
+            </div>
+
+            <!-- Prefix & Take -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="arri-panel p-3 flex flex-col items-center shadow-lg">
+                    <label class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-2">Prefix</label>
+                    <button onclick="cyclePrefix()" id="val-prefix" class="w-full h-14 bg-zinc-900 border border-zinc-700 rounded-lg text-2xl font-bold text-zinc-300 btn-press">-</button>
+                </div>
+                
+                <div class="arri-panel p-3 flex flex-col items-center shadow-lg border-red-900/30">
+                    <label class="text-[10px] uppercase text-red-500 font-bold tracking-widest mb-2">Take</label>
+                    <div class="flex items-center gap-1 w-full">
+                        <button onclick="updateTake(-1)" class="w-10 h-14 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-bold text-xl text-zinc-300 btn-press">-</button>
+                        <input type="number" id="val-take" value="1" class="flex-1 h-14 text-3xl font-black font-mono text-center text-red-500 bg-black border border-red-900/50 rounded-lg w-full px-1 outline-none focus:border-red-500">
+                        <button onclick="updateTake(1)" class="w-10 h-14 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-bold text-xl text-zinc-300 btn-press">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Toggles -->
+            <div class="arri-panel p-3 shadow-lg mt-1">
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setStatus('PRINT', this)" class="status-toggle bg-zinc-900 py-3 rounded-lg btn-press flex flex-col items-center gap-1 border border-zinc-800">
+                        <i class="fa-solid fa-circle-check text-green-500 text-xl"></i>
+                        <span class="font-bold text-white uppercase text-[9px] mt-1">Print</span>
+                    </button>
+                    <button onclick="setStatus('HOLD', this)" class="status-toggle bg-zinc-900 py-3 rounded-lg btn-press flex flex-col items-center gap-1 border border-zinc-800">
+                        <i class="fa-solid fa-pause text-amber-500 text-xl"></i>
+                        <span class="font-bold text-white uppercase text-[9px] mt-1">Hold</span>
+                    </button>
+                    <button onclick="setStatus('NG', this)" class="status-toggle bg-zinc-900 py-3 rounded-lg btn-press flex flex-col items-center gap-1 border border-zinc-800">
+                        <i class="fa-solid fa-xmark text-red-500 text-xl"></i>
+                        <span class="font-bold text-white uppercase text-[9px] mt-1">NG</span>
+                    </button>
+                    <button onclick="setStatus('FS', this)" class="status-toggle bg-zinc-900 py-3 rounded-lg btn-press flex flex-col items-center gap-1 border border-zinc-800">
+                        <i class="fa-solid fa-rotate-left text-orange-500 text-xl"></i>
+                        <span class="font-bold text-white uppercase text-[9px] mt-1">F.Start</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Massive LOG Button -->
+            <button onclick="logTake()" class="w-full bg-red-700 hover:bg-red-600 active:bg-red-800 text-white rounded-xl border border-red-500 btn-press flex flex-col items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.4)] py-6 mt-2 mb-4">
+                <span class="text-3xl font-black tracking-widest drop-shadow-md">+ LOG TAKE</span>
+                <span class="text-[10px] font-bold text-red-200 uppercase tracking-widest mt-1 opacity-80">Capture TC In/Out</span>
+            </button>
+        </div>
+
+        <!-- TAB 2: CAMERA DEPT -->
+        <div id="tab-camera" class="hidden p-4 flex flex-col gap-4">
+            <div class="arri-panel p-4 flex flex-col gap-4">
                 <div>
-                    <h1 class="text-base font-black text-white tracking-wider">CINE REPORT PRO</h1>
-                    <p class="text-[9px] text-gray-500">Select or Create a Project to Start</p>
+                    <label class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 block">Cam Media Card (Roll)</label>
+                    <input type="text" id="cam-roll" value="A001" class="arri-input text-xl font-black w-full text-center">
                 </div>
-            </div>
-            <span class="text-[9px] bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded font-mono font-bold">v1.1</span>
-        </div>
+                
+                <div class="h-px bg-zinc-800 w-full"></div>
 
-        <div class="bg-[#16161c] border border-gray-800 p-3 rounded-2xl mb-4 shrink-0 shadow-lg flex space-x-2">
-            <input type="text" id="newProjectName" class="flex-1 bg-black border border-gray-700 text-xs py-2 px-3 rounded-xl text-white focus:border-blue-500" placeholder="พิมพ์ชื่อโปรเจกต์ใหม่ที่นี่...">
-            <button onclick="createNewProject()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded-xl font-bold text-xs shadow-lg btn-press flex items-center gap-1.5 shrink-0">
-                <i class="fa-solid fa-plus"></i>
-                <span>สร้างโปรเจกต์</span>
-            </button>
-        </div>
-
-        <div class="flex justify-between items-center mb-2 px-1 shrink-0">
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-cubes text-blue-500 mr-1.5"></i> Projects Library</span>
-            <span id="projectTotalBadge" class="text-[9px] text-gray-500">0 Projects</span>
-        </div>
-
-        <div id="projectGridContainer" class="flex-1 overflow-y-auto scroll-custom grid grid-cols-1 md:grid-cols-2 gap-3 pr-1 pb-4"></div>
-    </div>
-
-    <!-- 2. MAIN WORKSPACE APP -->
-    <div id="view-workspace" class="flex-1 flex flex-col w-full h-full relative overflow-hidden hidden">
-
-        <header class="bg-[#121215] border-b border-gray-800 p-1.5 shrink-0 z-10">
-            <div class="flex justify-between items-center mb-1">
-                <div class="flex items-center space-x-1.5">
-                    <h1 class="text-sm font-black text-red-500 tracking-wider flex items-center gap-1">
-                        <i class="fa-solid fa-clapperboard"></i> CINE REPORT
-                    </h1>
-                    <span class="text-[8px] bg-red-950 text-red-400 border border-red-800 px-1 py-0.2 rounded font-mono">v1.1</span>
-                </div>
-                <button onclick="openProjectLauncher()" class="text-[9px] bg-blue-900/40 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded-lg hover:border-blue-400 btn-press flex items-center shadow-lg gap-1">
-                    <i class="fa-solid fa-chevron-left text-[8px]"></i>
-                    <i class="fa-solid fa-cubes text-blue-400"></i> 
-                    <span id="currentProjectNameDisplay" class="font-bold truncate max-w-[100px]">Project</span>
-                </button>
-            </div>
-
-            <div class="grid grid-cols-4 gap-1 text-[10px] border-t border-gray-800/60 pt-1">
-                <div><label class="text-[7px] uppercase text-gray-500 block">Prod Name</label><input type="text" id="prodName" placeholder="Project Name" class="w-full py-0.5 text-[9px]"></div>
-                <div><label class="text-[7px] uppercase text-gray-500 block">Director</label><input type="text" id="director" placeholder="Director" class="w-full py-0.5 text-[9px]"></div>
-                <div><label class="text-[7px] uppercase text-gray-500 block">DoP / DP</label><input type="text" id="dop" placeholder="DoP" class="w-full py-0.5 text-[9px]"></div>
-                <div><label class="text-[7px] uppercase text-gray-500 block">Sound Mixer</label><input type="text" id="sndMixer" placeholder="Mixer" class="w-full py-0.5 text-[9px]"></div>
-            </div>
-        </header>
-
-        <nav class="flex bg-[#121215] border-b border-gray-800 shrink-0 z-10">
-            <button onclick="switchMainTab('input')" id="tab-main-input" class="flex-1 py-1.5 text-xs font-bold border-b-2 border-red-500 text-red-500 tracking-wider">
-                <i class="fa-solid fa-camera mr-1"></i> NEW TAKE
-            </button>
-            <button onclick="switchMainTab('log')" id="tab-main-log" class="flex-1 py-1.5 text-xs font-bold text-gray-500 hover:text-white tracking-wider">
-                <i class="fa-solid fa-list mr-1"></i> WRAP REPORT (<span id="logCountBadge">0</span>)
-            </button>
-        </nav>
-
-        <main class="flex-1 relative w-full overflow-hidden">
-            <!-- TAB 1: INPUT CONTROLS -->
-            <div id="view-input" class="absolute inset-0 flex flex-col p-1.5 gap-1 bg-[#0f0f11] overflow-hidden">
-                <div class="grid grid-cols-4 gap-1 bg-black p-1 rounded-lg border border-gray-800 shrink-0">
-                    <div><label class="text-[7px] uppercase text-gray-500 block">Cam Roll</label><input type="text" id="camRoll" value="A001" class="w-full font-mono font-bold text-center py-0.5 text-[10px]"></div>
-                    <div><label class="text-[7px] uppercase text-gray-500 block">Sound Roll</label><input type="text" id="soundRoll" value="SR001" class="w-full font-mono font-bold text-center py-0.5 text-[10px]"></div>
-                    <div><label class="text-[7px] uppercase text-gray-500 block">Date</label><input type="date" id="shootDate" class="w-full py-0.5 text-[9px]"></div>
-                    <div><label class="text-[7px] uppercase text-gray-500 block">Shoot Day</label><input type="text" id="shootDay" value="Day 1" class="w-full font-bold text-center py-0.5 text-[10px]"></div>
-                </div>
-
-                <div class="glass-panel p-1.5 flex flex-col gap-1 shrink-0">
-                    <div class="grid grid-cols-3 gap-1">
-                        <div class="flex flex-col items-center">
-                            <span class="text-[8px] text-gray-400 font-bold uppercase mb-0.5">Prefix</span>
-                            <button onclick="cyclePrefix()" id="prefixBtn" class="w-full h-8 bg-gray-800 hover:bg-gray-700 rounded-lg text-xs font-bold border border-gray-700 text-yellow-400 btn-press">INT.</button>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <span class="text-[8px] text-gray-400 font-bold uppercase mb-0.5">Scene</span>
-                            <div class="flex items-center space-x-0.5 w-full">
-                                <button onclick="updateScene(-1)" class="w-6 h-8 shrink-0 bg-gray-800 hover:bg-gray-700 rounded-l-lg font-bold text-xs border border-gray-700 btn-press">-</button>
-                                <input type="text" id="sceneVal" value="1" onclick="openSceneModal()" readonly class="w-full min-w-0 h-8 bg-black border-y border-gray-700 text-sm font-bold text-center cursor-pointer hover:border-red-500 text-white px-0">
-                                <button onclick="updateScene(1)" class="w-6 h-8 shrink-0 bg-gray-800 hover:bg-gray-700 rounded-r-lg font-bold text-sm border border-gray-700 btn-press">+</button>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <span class="text-[8px] text-gray-400 font-bold uppercase mb-0.5">Shot</span>
-                            <div class="flex items-center space-x-0.5 w-full">
-                                <button onclick="updateShot(-1)" class="w-6 h-8 shrink-0 bg-gray-800 hover:bg-gray-700 rounded-l-lg font-bold text-xs border border-gray-700 btn-press">-</button>
-                                <input type="text" id="shotVal" value="A" onclick="openShotModal()" readonly class="w-full min-w-0 h-8 bg-black border-y border-gray-700 text-sm font-bold text-center cursor-pointer hover:border-red-500 text-yellow-400 uppercase px-0">
-                                <button onclick="updateShot(1)" class="w-6 h-8 shrink-0 bg-gray-800 hover:bg-gray-700 rounded-r-lg font-bold text-sm border border-gray-700 btn-press">+</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button onclick="toggleShotMode()" id="shotModeBtn" class="w-full py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-md text-[9px] font-bold text-gray-300 uppercase tracking-wider btn-press">
-                        Shot Mode: Letters (A, B, C...)
-                    </button>
-
-                    <div class="flex items-center border-t border-gray-800 pt-1 justify-between px-1">
-                        <span class="text-[9px] text-gray-400 font-bold uppercase">Take Counter</span>
-                        <div class="flex items-center space-x-1.5">
-                            <button onclick="updateTake(-1)" class="w-8 h-8 bg-gray-800 hover:bg-gray-700 rounded-lg text-lg font-bold border border-gray-700 btn-press">-</button>
-                            <input type="number" id="takeVal" value="1" class="w-16 h-9 bg-black border border-gray-700 rounded-lg text-xl font-mono font-bold text-center text-red-500">
-                            <button onclick="updateTake(1)" class="w-8 h-8 bg-gray-800 hover:bg-gray-700 rounded-lg text-lg font-bold border border-gray-700 btn-press">+</button>
-                        </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest block">Lens Setup (Generate Lens Kit)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="lensSetupInput" placeholder="e.g. 18, 25, 35, 50, 85" class="bg-zinc-900 border border-zinc-700 text-white rounded px-3 py-2 text-sm flex-1 outline-none focus:border-red-500">
+                        <button onclick="generateLensButtons()" class="bg-zinc-700 hover:bg-zinc-600 px-4 py-2 rounded text-xs font-bold btn-press">Generate</button>
                     </div>
                 </div>
 
-                <div class="bg-[#16161a] border border-gray-800 rounded-lg overflow-hidden shrink-0 flex flex-col">
-                    <div class="flex border-b border-gray-800 bg-[#121215]">
-                        <button onclick="switchDeptTab('camTab')" id="btn-camTab" class="tab-btn active flex-1 py-1 font-bold text-[9px] uppercase">Camera Spec</button>
-                        <button onclick="switchDeptTab('soundTab')" id="btn-soundTab" class="tab-btn flex-1 py-1 font-bold text-[9px] text-gray-500 hover:text-white uppercase">Sound Spec</button>
+                <div class="flex flex-col gap-2 mt-2">
+                    <label class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest flex justify-between items-center">
+                        Active Lens
+                        <button onclick="clearLensButtons()" class="text-red-500 text-xs" title="Clear Lenses"><i class="fa-solid fa-trash"></i> Clear</button>
+                    </label>
+                    <div id="lensButtonsContainer" class="flex flex-wrap gap-2 items-center bg-zinc-900/50 p-2 rounded-lg border border-zinc-800 min-h-[50px]">
+                        <span class="text-xs text-zinc-600 italic">Generate lenses above...</span>
                     </div>
-                    
-                    <!-- CAMERA TAB -->
-                    <div id="camTab" class="p-1.5 space-y-1">
-                        <div class="bg-black p-1 rounded border border-gray-800 space-y-0.5">
-                            <div class="flex items-center space-x-1">
-                                <span class="text-[7px] text-gray-400 font-bold uppercase w-12 shrink-0">Lens Set:</span>
-                                <input type="text" id="lensSetupInput" value="18, 25, 35, 50, 85" class="flex-1 text-[9px] py-0.2">
-                                <button onclick="generateLensButtons()" class="bg-gray-800 px-1.5 py-0.2 rounded text-[8px] font-bold border border-gray-700 btn-press">Set</button>
-                            </div>
-                            <div class="flex items-center space-x-1 pt-0.5 border-t border-gray-900">
-                                <span class="text-[7px] text-gray-400 font-bold uppercase w-12 shrink-0">Active:</span>
-                                <div id="lensButtonsContainer" class="flex space-x-1 overflow-x-auto py-0.2"></div>
-                                <input type="hidden" id="activeLens" value="35mm">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-1">
-                            <div><label class="text-[7px] text-gray-500 uppercase block">T-Stop</label><input type="text" id="camTStop" value="T2.8" class="w-full text-[9px] py-0.5"></div>
-                            <div><label class="text-[7px] text-gray-500 uppercase block">ISO</label><input type="text" id="camISO" value="800" class="w-full text-[9px] py-0.5"></div>
-                            <div><label class="text-[7px] text-gray-500 uppercase block">WB</label><input type="text" id="camWB" value="56K" class="w-full text-[9px] py-0.5"></div>
-                            <div>
-                                <label class="text-[7px] text-gray-500 uppercase block">ND</label>
-                                <input type="text" id="camND" value="Clear" onclick="cycleND()" readonly class="w-full text-[9px] py-0.5 text-center font-bold cursor-pointer bg-gray-800">
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-1">
-                            <div>
-                                <label class="text-[7px] text-gray-500 uppercase block">Cam ID</label>
-                                <select id="camID" class="w-full text-[8px] py-0.5 bg-gray-800 border-gray-700 text-yellow-400 font-bold">
-                                    <option value="A-Cam">A-Cam</option>
-                                    <option value="B-Cam">B-Cam</option>
-                                    <option value="C-Cam">C-Cam</option>
-                                    <option value="D-Cam">D-Cam</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[7px] text-gray-500 uppercase block">Sensor FPS</label>
-                                <select id="camSensorFPS" class="w-full text-[8px] py-0.5 bg-gray-800 border-gray-700">
-                                    <option value="24 fps">24 fps</option>
-                                    <option value="23.976 fps">23.976 fps</option>
-                                    <option value="25 fps">25 fps</option>
-                                    <option value="48 fps">48 fps</option>
-                                    <option value="60 fps">60 fps</option>
-                                    <option value="120 fps">120 fps</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[7px] text-gray-500 uppercase block">Shutter</label>
-                                <select id="camShutter" class="w-full text-[8px] py-0.5 bg-gray-800 border-gray-700">
-                                    <option value="180°">180°</option>
-                                    <option value="172.8°">172.8°</option>
-                                    <option value="90°">90°</option>
-                                    <option value="45°">45°</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[7px] text-gray-500 uppercase block">Squeeze</label>
-                                <select id="camSqueeze" class="w-full text-[8px] py-0.5 bg-gray-800 border-gray-700">
-                                    <option value="1.0x">1.0x (Sph.)</option>
-                                    <option value="1.33x">1.33x Ana</option>
-                                    <option value="1.5x">1.5x Ana</option>
-                                    <option value="1.8x">1.8x Ana</option>
-                                    <option value="2.0x">2.0x Ana</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="flex space-x-1 overflow-x-auto py-0.2">
-                                <button type="button" onclick="appendCamFlag('Soft Focus')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Soft Focus</button>
-                                <button type="button" onclick="appendCamFlag('High Speed')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ High Speed</button>
-                                <button type="button" onclick="appendCamFlag('Steadicam')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Steadicam</button>
-                                <button type="button" onclick="appendCamFlag('Handheld')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Handheld</button>
-                                <button type="button" onclick="appendCamFlag('Gimbal')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Gimbal</button>
-                                <button type="button" onclick="appendCamFlag('Lens Flare')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Flare</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SOUND TAB -->
-                    <div id="soundTab" class="p-1.5 space-y-1 hidden">
-                        <div class="space-y-0.5">
-                            <label class="text-[7px] text-gray-400 font-bold uppercase block">Sound Sync & Type</label>
-                            <div class="grid grid-cols-4 gap-1">
-                                <button type="button" onclick="setSoundSync('SYNC', this)" class="sound-sync-btn bg-red-900 border border-red-500 text-white px-1 py-0.5 text-[8px] rounded font-bold btn-press">SYNC</button>
-                                <button type="button" onclick="setSoundSync('MOS', this)" class="sound-sync-btn bg-gray-800 border border-gray-700 text-gray-300 px-1 py-0.5 text-[8px] rounded font-bold btn-press">MOS</button>
-                                <button type="button" onclick="setSoundSync('WILD', this)" class="sound-sync-btn bg-gray-800 border border-gray-700 text-gray-300 px-1 py-0.5 text-[8px] rounded font-bold btn-press">WILD</button>
-                                <button type="button" onclick="setSoundSync('ROOM TONE', this)" class="sound-sync-btn bg-gray-800 border border-gray-700 text-gray-300 px-1 py-0.5 text-[8px] rounded font-bold btn-press">ROOM TONE</button>
-                            </div>
-                            <input type="hidden" id="soundSyncVal" value="SYNC">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-1">
-                            <div>
-                                <label class="text-[7px] text-gray-500 uppercase block">Audio Spec</label>
-                                <select id="soundAudioSpec" class="w-full text-[8px] py-0.5 bg-gray-800 border-gray-700">
-                                    <option value="48kHz / 24-bit">48kHz / 24-bit (Netflix Standard)</option>
-                                    <option value="96kHz / 24-bit">96kHz / 24-bit</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[7px] text-gray-500 uppercase block">TC Frame Rate</label>
-                                <select id="soundTCFps" class="w-full text-[8px] py-0.5 bg-gray-800 border-gray-700">
-                                    <option value="23.976 fps">23.976 fps</option>
-                                    <option value="24.00 fps">24.00 fps</option>
-                                    <option value="25.00 fps">25.00 fps</option>
-                                    <option value="29.97 fps">29.97 fps</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="bg-black p-1 rounded border border-gray-800 space-y-0.2">
-                            <label class="text-[7px] text-gray-400 font-bold uppercase block">Track Map (Tr 1-4)</label>
-                            <input type="text" id="soundTrackMap" value="Tr1: Mix | Tr2: Boom | Tr3: Lav A | Tr4: Lav B" class="w-full text-[8px] py-0.2 font-mono">
-                        </div>
-
-                        <div>
-                            <div class="flex space-x-1 overflow-x-auto py-0.2">
-                                <button type="button" onclick="appendSoundFlag('Plane Noise')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Plane</button>
-                                <button type="button" onclick="appendSoundFlag('Gen Noise')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Generator</button>
-                                <button type="button" onclick="appendSoundFlag('Mic Bump')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Mic Bump</button>
-                                <button type="button" onclick="appendSoundFlag('Dialogue Overlap')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Overlap</button>
-                                <button type="button" onclick="appendSoundFlag('Cloth Rustle')" class="bg-gray-800 border border-gray-700 px-1 py-0.2 text-[8px] rounded text-yellow-300 shrink-0 btn-press">+ Cloth Rustle</button>
-                            </div>
-                        </div>
-                    </div>
+                    <input type="hidden" id="activeLens" value="-">
                 </div>
 
-                <div class="shrink-0 flex flex-col gap-1">
-                    <div class="grid grid-cols-3 gap-1">
-                        <button onclick="setStatus('Circled Take', this)" class="status-btn p-1 bg-gray-800 rounded border border-gray-700 hover:border-green-500 btn-press">
-                            <div class="font-bold text-green-400 text-[9px]">Circled</div>
-                        </button>
-                        <button onclick="setStatus('B-Negative', this)" class="status-btn p-1 bg-gray-800 rounded border border-gray-700 hover:border-yellow-500 btn-press">
-                            <div class="font-bold text-yellow-400 text-[9px]">B-Negative</div>
-                        </button>
-                        <button onclick="setStatus('No Good', this)" class="status-btn p-1 bg-gray-800 rounded border border-gray-700 hover:border-red-500 btn-press">
-                            <div class="font-bold text-red-400 text-[9px]">No Good</div>
-                        </button>
-                    </div>
-                    <input type="hidden" id="currentStatus" value="-">
-                    <input type="text" id="takeNote" placeholder="พิมพ์ Note สำหรับเทคนี้ (ถ้ามี)..." class="w-full bg-black border border-gray-700 text-xs py-1.5 px-2 rounded-lg text-white focus:border-red-500">
-                </div>
-
-                <button onclick="logTake()" class="w-full mt-auto bg-red-600 hover:bg-red-500 text-white font-black text-base py-2.5 rounded-xl shadow-lg border border-red-400 btn-press flex items-center justify-center space-x-2 shrink-0">
-                    <i class="fa-solid fa-plus-circle text-lg"></i>
-                    <span>LOG TAKE NOW</span>
-                </button>
-            </div>
-
-            <!-- TAB 2: MASTER LOG LIST & WRAP REPORT -->
-            <div id="view-log" class="absolute inset-0 flex flex-col p-2 bg-[#0f0f11] hidden">
-                <div class="flex flex-col gap-1.5 mb-2 shrink-0 border-b border-gray-800 pb-2">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Netflix Standard Exports (v1.1)</h2>
-                        <span class="text-[8px] text-gray-500">เปิดหน้าต่างส่งออกมือถือ</span>
-                    </div>
-                    
-                    <!-- ปุ่มส่งออก 5 รูปแบบสากล -->
-                    <div class="grid grid-cols-5 gap-1">
-                        <button onclick="triggerExport('master-pdf')" class="bg-red-950 text-red-300 border border-red-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
-                            <i class="fa-solid fa-file-pdf"></i> Master PDF
-                        </button>
-                        <button onclick="triggerExport('master-csv')" class="bg-blue-950 text-blue-300 border border-blue-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
-                            <i class="fa-solid fa-file-csv"></i> Master CSV
-                        </button>
-                        <button onclick="triggerExport('sound-pdf')" class="bg-purple-950 text-purple-200 border border-purple-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
-                            <i class="fa-solid fa-file-pdf"></i> Sound PDF
-                        </button>
-                        <button onclick="triggerExport('sound-csv')" class="bg-purple-900/40 text-purple-300 border border-purple-700/60 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
-                            <i class="fa-solid fa-file-csv"></i> Sound CSV
-                        </button>
-                        <button onclick="triggerExport('avid-ale')" class="bg-amber-950 text-amber-300 border border-amber-800 py-1.5 rounded text-[8px] font-bold btn-press flex flex-col items-center justify-center gap-0.5">
-                            <i class="fa-solid fa-film"></i> Avid ALE
-                        </button>
-                    </div>
-                </div>
-
-                <div id="logTableContainer" class="flex-1 overflow-auto scroll-custom border border-gray-800 rounded-lg bg-black relative">
-                    <table class="w-full text-left text-xs whitespace-nowrap" id="logTable">
-                        <thead class="bg-[#16161a] text-gray-400 border-b border-gray-800 sticky top-0 z-10">
-                            <tr>
-                                <th class="p-1.5 w-8 bg-[#16161a]">#</th>
-                                <th class="p-1.5 bg-[#16161a]">Scene</th>
-                                <th class="p-1.5 bg-[#16161a]">Shot</th>
-                                <th class="p-1.5 text-center bg-[#16161a]">Take</th>
-                                <th class="p-1.5 text-center bg-[#16161a]">Status</th>
-                                <th class="p-1.5 bg-[#16161a]">Cam ID/Roll</th>
-                                <th class="p-1.5 bg-[#16161a]">Sound Roll</th>
-                                <th class="p-1.5 bg-[#16161a]">Sound Sync</th>
-                                <th class="p-1.5 bg-[#16161a]">Lens / Specs</th>
-                                <th class="p-1.5 w-48 bg-[#16161a]">Notes</th>
-                                <th class="p-1.5 text-center w-10 bg-[#16161a]">Del</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logBody" class="divide-y divide-gray-800/50 text-gray-300"></tbody>
-                    </table>
-                    <div id="emptyLogMsg" class="text-center text-gray-600 py-8 italic hidden">No Takes Logged in this Project</div>
-                </div>
-
-                <div class="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
-                    <button onclick="scrollLogTo('top')" class="w-8 h-8 bg-gray-800/90 backdrop-blur border border-gray-700 rounded-full text-gray-400 hover:text-white shadow-lg flex items-center justify-center btn-press">
-                        <i class="fa-solid fa-arrow-up"></i>
-                    </button>
-                    <button onclick="scrollLogTo('bottom')" class="w-8 h-8 bg-gray-800/90 backdrop-blur border border-gray-700 rounded-full text-gray-400 hover:text-white shadow-lg flex items-center justify-center btn-press">
-                        <i class="fa-solid fa-arrow-down"></i>
-                    </button>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- 3. IN-APP MOBILE EXPORT MODAL SHEET (หน้าต่างส่งออกไฟล์บนมือถือ 100% Works) -->
-    <div id="exportModal" class="fixed inset-0 bg-black/95 hidden z-50 flex items-center justify-center p-3 backdrop-blur-md">
-        <div class="bg-[#16161c] border border-gray-700 rounded-2xl w-full max-w-lg h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-            <!-- Modal Header -->
-            <div class="flex justify-between items-center p-3 border-b border-gray-800 bg-[#111115]">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-share-nodes text-red-500 text-sm"></i>
-                    <h3 id="exportModalTitle" class="font-bold text-white text-xs uppercase tracking-wider">Export Report</h3>
-                </div>
-                <button onclick="closeExportModal()" class="text-gray-400 hover:text-white w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center text-xs btn-press">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <!-- Modal Quick Action Controls -->
-            <div class="p-2.5 bg-[#1a1a22] border-b border-gray-800 flex gap-2 shrink-0">
-                <button onclick="copyExportText()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-xl font-bold text-xs shadow-lg btn-press flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-copy"></i>
-                    <span>คัดลอกข้อความ</span>
-                </button>
-                <button onclick="shareExportText()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded-xl font-bold text-xs shadow-lg btn-press flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <span>แชร์เข้า LINE / Apps</span>
-                </button>
-            </div>
-
-            <!-- Export Display View Area -->
-            <div id="exportDisplayArea" class="flex-1 overflow-auto scroll-custom p-3 bg-black">
-                <!-- Data Content Rendered Here -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals (Scene & Shot) -->
-    <div id="sceneModal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-[#1a1a1a] border border-gray-700 rounded-xl w-[300px] overflow-hidden shadow-2xl p-3 space-y-2">
-            <h3 class="font-bold text-white uppercase tracking-wider text-xs text-center mb-1">Input Scene</h3>
-            <input type="text" id="sceneCustomInput" class="w-full bg-black border border-gray-700 text-lg text-center py-2 font-bold rounded text-white" placeholder="e.g. 14A">
-            <div class="grid grid-cols-5 gap-1 mt-1">
-                <button onclick="setModalValue('sceneCustomInput', '1')" class="bg-gray-800 text-white font-bold py-1.5 rounded border border-gray-700 btn-press">1</button>
-                <button onclick="setModalValue('sceneCustomInput', '2')" class="bg-gray-800 text-white font-bold py-1.5 rounded border border-gray-700 btn-press">2</button>
-                <button onclick="setModalValue('sceneCustomInput', '3')" class="bg-gray-800 text-white font-bold py-1.5 rounded border border-gray-700 btn-press">3</button>
-                <button onclick="setModalValue('sceneCustomInput', '4')" class="bg-gray-800 text-white font-bold py-1.5 rounded border border-gray-700 btn-press">4</button>
-                <button onclick="setModalValue('sceneCustomInput', '5')" class="bg-gray-800 text-white font-bold py-1.5 rounded border border-gray-700 btn-press">5</button>
-            </div>
-            <div class="flex space-x-2 pt-1">
-                <button onclick="closeSceneModal()" class="flex-1 bg-gray-800 text-white font-bold py-1.5 rounded btn-press">CANCEL</button>
-                <button onclick="confirmSceneModal()" class="flex-1 bg-red-600 text-white font-bold py-1.5 rounded btn-press">APPLY</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="shotModal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-[#1a1a1a] border border-gray-700 rounded-xl w-[300px] overflow-hidden shadow-2xl p-3 space-y-2">
-            <h3 class="font-bold text-white uppercase tracking-wider text-xs text-center mb-1">Input Shot</h3>
-            <input type="text" id="shotCustomInput" class="w-full bg-black border border-gray-700 text-lg text-center py-2 font-bold rounded text-yellow-400 uppercase" placeholder="e.g. A">
-            <div class="grid grid-cols-5 gap-1 mt-1">
-                <button onclick="setModalValue('shotCustomInput', 'A')" class="bg-gray-800 text-yellow-400 font-bold py-1.5 rounded border border-gray-700 btn-press">A</button>
-                <button onclick="setModalValue('shotCustomInput', 'B')" class="bg-gray-800 text-yellow-400 font-bold py-1.5 rounded border border-gray-700 btn-press">B</button>
-                <button onclick="setModalValue('shotCustomInput', 'C')" class="bg-gray-800 text-yellow-400 font-bold py-1.5 rounded border border-gray-700 btn-press">C</button>
-                <button onclick="setModalValue('shotCustomInput', 'D')" class="bg-gray-800 text-yellow-400 font-bold py-1.5 rounded border border-gray-700 btn-press">D</button>
-                <button onclick="setModalValue('shotCustomInput', 'E')" class="bg-gray-800 text-yellow-400 font-bold py-1.5 rounded border border-gray-700 btn-press">E</button>
-            </div>
-            <div class="flex space-x-2 pt-1">
-                <button onclick="closeShotModal()" class="flex-1 bg-gray-800 text-white font-bold py-1.5 rounded btn-press">CANCEL</button>
-                <button onclick="confirmShotModal()" class="flex-1 bg-red-600 text-white font-bold py-1.5 rounded btn-press">APPLY</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SCRIPT ENGINE -->
-    <script>
-        let appData = JSON.parse(localStorage.getItem('cine_app_data'));
-        if (!appData) {
-            appData = {
-                projects: [{
-                    id: 'proj_' + Date.now(),
-                    name: 'Default Project',
-                    logs: JSON.parse(localStorage.getItem('cine_logs')) || [],
-                    state: JSON.parse(localStorage.getItem('cine_state')) || {}
-                }],
-                currentProjectId: null
-            };
-            appData.currentProjectId = appData.projects[0].id;
-            saveAppData();
-        }
-
-        let logsData = [];
-        const stateFields = [
-            'prodName', 'director', 'dop', 'sndMixer', 'camRoll', 'soundRoll', 'shootDate', 'shootDay', 
-            'sceneVal', 'shotVal', 'takeVal', 'lensSetupInput', 'camTStop', 'camISO', 'camWB', 
-            'camID', 'camSensorFPS', 'camShutter', 'camSqueeze',
-            'soundSyncVal', 'soundAudioSpec', 'soundTCFps', 'soundTrackMap'
-        ];
-
-        function saveAppData() { localStorage.setItem('cine_app_data', JSON.stringify(appData)); }
-        function getCurrentProject() { return appData.projects.find(p => p.id === appData.currentProjectId) || appData.projects[0]; }
-
-        window.onload = () => { openProjectLauncher(); };
-
-        function openProjectLauncher() {
-            renderProjectGrid();
-            document.getElementById('view-project-launcher').classList.remove('hidden');
-            document.getElementById('view-workspace').classList.add('hidden');
-        }
-
-        function renderProjectGrid() {
-            const container = document.getElementById('projectGridContainer');
-            const totalBadge = document.getElementById('projectTotalBadge');
-            container.innerHTML = '';
-            totalBadge.innerText = `${appData.projects.length} Projects`;
-
-            appData.projects.forEach(p => {
-                const isActive = p.id === appData.currentProjectId;
-                const card = document.createElement('div');
-                card.className = `sidus-card p-4 rounded-2xl flex flex-col justify-between cursor-pointer btn-press min-h-[110px] relative overflow-hidden`;
-                card.onclick = () => selectProjectAndOpen(p.id);
-
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="w-9 h-9 rounded-xl ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'} flex items-center justify-center font-bold text-sm shadow-md">
-                            <i class="fa-solid fa-clapperboard"></i>
-                        </div>
-                        <div class="flex items-center space-x-1.5">
-                            ${isActive ? '<span class="text-[8px] bg-blue-950 text-blue-400 border border-blue-800 px-2 py-0.5 rounded-full font-bold">LAST ACTIVE</span>' : ''}
-                            <button onclick="deleteProject('${p.id}', event)" class="w-7 h-7 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-950/40 flex items-center justify-center border border-gray-800">
-                                <i class="fa-solid fa-trash-can text-[10px]"></i>
-                            </button>
-                        </div>
-                    </div>
+                <div class="grid grid-cols-2 gap-3 mt-2">
+                    <div><label class="text-[9px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">T-Stop</label><input type="text" id="camTStop" value="T2.8" class="arri-input text-sm w-full py-2"></div>
+                    <div><label class="text-[9px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">ISO</label><input type="text" id="camISO" value="800" class="arri-input text-sm w-full py-2"></div>
+                    <div><label class="text-[9px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">WB / Tint</label><input type="text" id="camWB" value="5600K" class="arri-input text-sm w-full py-2"></div>
                     <div>
-                        <h3 class="font-black text-sm text-white truncate mb-1">${p.name}</h3>
-                        <div class="flex items-center justify-between text-[9px] text-gray-500 font-mono">
-                            <span><i class="fa-solid fa-list mr-1 text-gray-600"></i>${p.logs ? p.logs.length : 0} Takes</span>
-                            <span><i class="fa-regular fa-calendar mr-1 text-gray-600"></i>${(p.state && p.state.shootDate) ? p.state.shootDate : 'No Date'}</span>
+                        <label class="text-[9px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">ND Filter</label>
+                        <div class="flex items-center gap-1 w-full bg-[#111] border border-[#333] rounded overflow-hidden h-[34px]">
+                            <button onclick="updateND(-1)" class="w-8 h-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 btn-press font-bold">-</button>
+                            <input type="text" id="camND" value="Clear" readonly class="bg-transparent text-white font-mono text-xs text-center flex-1 outline-none pointer-events-none">
+                            <button onclick="updateND(1)" class="w-8 h-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 btn-press font-bold">+</button>
                         </div>
                     </div>
-                `;
-                container.appendChild(card);
+                    <div class="col-span-2">
+                        <label class="text-[9px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">Color Space</label>
+                        <select id="camColor" class="arri-input text-xs w-full py-2 px-2 bg-[#111] outline-none">
+                            <option value="LogC4" selected>ARRI LogC4</option>
+                            <option value="LogC3">ARRI LogC3</option>
+                            <option value="Log3G10">RED Log3G10</option>
+                            <option value="S-Log3">Sony S-Log3</option>
+                            <option value="C-Log3">Canon C-Log3</option>
+                            <option value="ACES">ACES</option>
+                            <option value="Rec709">Rec709</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: SOUND DEPT -->
+        <div id="tab-sound" class="hidden p-4 flex flex-col gap-4">
+            <div class="arri-panel p-4 flex flex-col gap-4">
+                <div>
+                    <label class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest mb-1 block">Sound Roll</label>
+                    <input type="text" id="snd-roll" value="SR001" class="arri-input text-xl font-black w-full text-center">
+                </div>
+
+                <div class="h-px bg-zinc-800 w-full"></div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[9px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">Sample Rate</label>
+                        <select id="sndRate" class="arri-input text-sm py-2 w-full"><option>48kHz</option><option>96kHz</option></select>
+                    </div>
+                    <div><label class="text-[9px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">Bit Depth</label>
+                        <select id="sndBit" class="arri-input text-sm py-2 w-full"><option>24-bit</option><option>32-bit Float</option></select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2 mt-2">
+                    <label class="text-[9px] text-zinc-500 uppercase block mb-1 font-bold tracking-widest">Flags</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="toggleFlag(this, 'MOS')" class="snd-flag bg-zinc-800 py-2 text-[10px] rounded-lg border border-zinc-700 font-bold btn-press">MOS</button>
+                        <button onclick="toggleFlag(this, 'WILD')" class="snd-flag bg-zinc-800 py-2 text-[10px] rounded-lg border border-zinc-700 font-bold btn-press">WILD TRK</button>
+                        <button onclick="toggleFlag(this, 'TONE')" class="snd-flag bg-zinc-800 py-2 text-[10px] rounded-lg border border-zinc-700 font-bold btn-press">ROOM TONE</button>
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    <label class="text-[9px] text-zinc-500 uppercase block mb-2 font-bold tracking-widest">iXML 4-Track Layout</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="tr1" placeholder="Ch1" value="MixL" class="arri-input text-xs py-2 text-center">
+                        <input type="text" id="tr2" placeholder="Ch2" value="MixR" class="arri-input text-xs py-2 text-center">
+                        <input type="text" id="tr3" placeholder="Ch3" value="Boom1" class="arri-input text-xs py-2 text-center">
+                        <input type="text" id="tr4" placeholder="Ch4" class="arri-input text-xs py-2 text-center">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: LOGS & CREW -->
+        <div id="tab-logs" class="hidden flex flex-col min-h-full">
+            
+            <!-- Crew Setup -->
+            <div class="p-4 border-b border-zinc-800 bg-[#0a0a0c]">
+                <h2 class="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-3"><i class="fa-solid fa-users mr-2"></i>Crew & Shoot Setup</h2>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="flex items-center gap-2"><span class="text-[9px] text-zinc-500 font-bold uppercase w-10">Date</span><input type="date" id="shoot-date" class="bg-zinc-900 border border-zinc-700 text-zinc-300 rounded px-2 py-1.5 text-xs w-full outline-none focus:border-red-500"></div>
+                    <div class="flex items-center gap-2"><span class="text-[9px] text-zinc-500 font-bold uppercase w-10">Day</span><input type="text" id="shoot-day" placeholder="1" class="bg-zinc-900 border border-zinc-700 text-zinc-300 rounded px-2 py-1.5 text-xs w-full text-center outline-none focus:border-red-500"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="flex items-center gap-2"><span class="text-[9px] text-zinc-500 font-bold uppercase w-10">PROD</span><input type="text" id="producer-name" class="bg-zinc-900 border border-zinc-700 text-white rounded px-2 py-1.5 text-[10px] w-full outline-none focus:border-red-500"></div>
+                    <div class="flex items-center gap-2"><span class="text-[9px] text-zinc-500 font-bold uppercase w-10">DIR</span><input type="text" id="director-name" class="bg-zinc-900 border border-zinc-700 text-white rounded px-2 py-1.5 text-[10px] w-full outline-none focus:border-red-500"></div>
+                    <div class="flex items-center gap-2"><span class="text-[9px] text-zinc-500 font-bold uppercase w-10">DOP</span><input type="text" id="dop-name" class="bg-zinc-900 border border-zinc-700 text-white rounded px-2 py-1.5 text-[10px] w-full outline-none focus:border-red-500"></div>
+                    <div class="flex items-center gap-2"><span class="text-[9px] text-zinc-500 font-bold uppercase w-10">SOUND</span><input type="text" id="sound-name" class="bg-zinc-900 border border-zinc-700 text-white rounded px-2 py-1.5 text-[10px] w-full outline-none focus:border-red-500"></div>
+                </div>
+            </div>
+
+            <!-- Table Actions -->
+            <div class="flex justify-between items-center p-3 bg-[#111] border-b border-zinc-800 shrink-0">
+                <h2 class="text-xs font-bold text-zinc-300 uppercase tracking-widest">Master Log Table</h2>
+                <div class="flex gap-2">
+                    <button onclick="alertBox('CSV Export ready')" class="bg-blue-900/50 hover:bg-blue-800/50 text-blue-400 px-3 py-1 rounded text-[10px] font-bold tracking-widest border border-blue-900 uppercase btn-press"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                    <button onclick="alertBox('ALE Export ready')" class="bg-purple-900/50 hover:bg-purple-800/50 text-purple-400 px-3 py-1 rounded text-[10px] font-bold tracking-widest border border-purple-900 uppercase btn-press"><i class="fa-solid fa-file-code"></i> ALE</button>
+                    <button onclick="alertBox('PDF Export ready')" class="bg-red-900/50 hover:bg-red-800/50 text-red-400 px-3 py-1 rounded text-[10px] font-bold tracking-widest border border-red-900 uppercase btn-press"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                </div>
+            </div>
+            
+            <!-- Log Table Container (Scrolls horizontally & vertically) -->
+            <div class="flex-1 overflow-auto bg-[#0a0a0c]">
+                <table class="w-full text-left text-xs whitespace-nowrap min-w-[800px]">
+                    <thead class="bg-zinc-900 text-zinc-400 sticky top-0 z-10 shadow-md">
+                        <tr>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px] w-8">#</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px] text-center w-12">Prefix</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px]">Scene</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px]">Shot</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px] text-center">Take</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px] text-center">Status</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px]">TC In</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px]">TC Out</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px]">Cam/Lens</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px]">Snd Roll</th>
+                            <th class="p-2 border-b border-r border-zinc-800 font-bold uppercase tracking-widest text-[9px] w-64">Notes</th>
+                            <th class="p-2 border-b border-zinc-800 font-bold uppercase tracking-widest text-[9px] text-center w-10">Del</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logBody" class="text-zinc-300 font-mono text-[11px]">
+                        <!-- Rows inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SCENE MODAL -->
+    <div id="sceneModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-[#121212] border border-zinc-700 rounded-xl w-full max-w-[360px] overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-4 bg-black border-b border-zinc-800 flex justify-between items-center">
+                <h3 class="font-bold text-white uppercase tracking-widest text-xs">Set Scene</h3>
+                <button onclick="closeModal('sceneModal')" class="text-zinc-500 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="flex border-b border-zinc-800 bg-black">
+                <button onclick="switchModalTab('scene', 'setup')" id="sceneTabSetup" class="flex-1 py-3 text-xs font-bold border-b-2 border-red-500 text-red-500 uppercase tracking-widest transition-colors">Setup</button>
+                <button onclick="switchModalTab('scene', 'custom')" id="sceneTabCustom" class="flex-1 py-3 text-xs font-bold text-zinc-500 border-b-2 border-transparent uppercase tracking-widest transition-colors">Custom</button>
+            </div>
+
+            <div id="sceneContentSetup" class="p-4 space-y-4 flex-1">
+                <div class="grid grid-cols-5 gap-2">
+                    <script>
+                        for(let i=1; i<=10; i++) document.write(`<button onclick="appendModalValue('scene', '${i}')" class="bg-zinc-800 hover:bg-zinc-700 py-3 rounded-lg text-sm font-bold btn-press">${i}</button>`);
+                    </script>
+                    <button onclick="appendModalValue('scene', '20')" class="bg-zinc-800 hover:bg-zinc-700 py-3 rounded-lg text-sm font-bold btn-press">20</button>
+                    <button onclick="appendModalValue('scene', '30')" class="bg-zinc-800 hover:bg-zinc-700 py-3 rounded-lg text-sm font-bold btn-press">30</button>
+                    <button onclick="appendModalValue('scene', '40')" class="bg-zinc-800 hover:bg-zinc-700 py-3 rounded-lg text-sm font-bold btn-press">40</button>
+                    <button onclick="appendModalValue('scene', '50')" class="bg-zinc-800 hover:bg-zinc-700 py-3 rounded-lg text-sm font-bold btn-press">50</button>
+                    <button onclick="appendModalValue('scene', '60')" class="bg-zinc-800 hover:bg-zinc-700 py-3 rounded-lg text-sm font-bold btn-press">60</button>
+                </div>
+                <div class="pt-2 border-t border-zinc-800">
+                    <input type="text" id="sceneSetupPreview" class="w-full bg-black text-center text-xl py-3 font-bold font-mono text-white border border-zinc-800 rounded-lg outline-none" placeholder="Preview">
+                </div>
+                <button onclick="confirmModal('scene', 'setup')" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-lg uppercase tracking-widest text-xs btn-press">Apply Setup</button>
+            </div>
+
+            <div id="sceneContentCustom" class="p-5 hidden space-y-4 flex-1">
+                <label class="text-[9px] font-bold tracking-widest text-zinc-500 uppercase block mb-1">Type Custom Scene Name</label>
+                <input type="text" id="sceneCustomInput" class="w-full bg-black border border-zinc-700 rounded-lg text-2xl text-center py-4 font-bold focus:border-red-500 text-white outline-none" placeholder="e.g. 14A PT2">
+                <button onclick="confirmModal('scene', 'custom')" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold tracking-widest text-xs py-4 rounded-lg mt-4 btn-press uppercase">Save Custom</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHOT MODAL -->
+    <div id="shotModal" class="fixed inset-0 modal-overlay hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-[#121212] border border-zinc-700 rounded-xl w-full max-w-[360px] overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-4 bg-black border-b border-zinc-800 flex justify-between items-center">
+                <h3 class="font-bold text-white uppercase tracking-widest text-xs">Set Shot</h3>
+                <button onclick="closeModal('shotModal')" class="text-zinc-500 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="flex border-b border-zinc-800 bg-black">
+                <button onclick="switchModalTab('shot', 'setup')" id="shotTabSetup" class="flex-1 py-3 text-xs font-bold border-b-2 border-red-500 text-red-500 uppercase tracking-widest transition-colors">Setup</button>
+                <button onclick="switchModalTab('shot', 'custom')" id="shotTabCustom" class="flex-1 py-3 text-xs font-bold text-zinc-500 border-b-2 border-transparent uppercase tracking-widest transition-colors">Custom</button>
+            </div>
+
+            <div id="shotContentSetup" class="p-4 space-y-4 flex-1">
+                <div class="grid grid-cols-6 gap-2">
+                    <script>
+                        const letters = ['A','B','C','D','E','F','G','H','J','K','L','M','N','P','Q','R','S','T','U','V','W','X','Y','Z'];
+                        letters.forEach(l => {
+                            document.write(`<button onclick="confirmDirectShot('${l}')" class="bg-zinc-800 hover:bg-zinc-700 py-3 rounded-lg border border-zinc-700 text-base font-bold btn-press text-amber-500">${l}</button>`);
+                        });
+                    </script>
+                </div>
+            </div>
+
+            <div id="shotContentCustom" class="p-5 hidden space-y-4 flex-1">
+                <label class="text-[9px] font-bold tracking-widest text-zinc-500 uppercase block mb-1">Type Custom Shot Name</label>
+                <input type="text" id="shotCustomInput" class="w-full bg-black border border-zinc-700 rounded-lg text-2xl text-center py-4 font-bold focus:border-red-500 text-amber-500 uppercase outline-none" placeholder="e.g. A2">
+                <button onclick="confirmModal('shot', 'custom')" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold tracking-widest text-xs py-4 rounded-lg mt-4 btn-press uppercase">Save Custom Shot</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE MODAL -->
+    <div id="deleteModal" class="fixed inset-0 modal-overlay hidden z-[60] flex items-center justify-center p-4">
+        <div class="bg-[#121212] border border-red-900 rounded-xl w-full max-w-[300px] p-6 shadow-2xl flex flex-col text-center">
+            <i class="fa-solid fa-triangle-exclamation text-4xl text-red-500 mb-4"></i>
+            <h3 class="font-bold text-white text-lg mb-2">Delete Log?</h3>
+            <p class="text-zinc-400 text-xs mb-6">Are you sure you want to permanently delete this take?</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 bg-zinc-800 text-white font-bold py-3 rounded-lg text-xs tracking-widest uppercase btn-press">Cancel</button>
+                <button onclick="executeDelete()" class="flex-1 bg-red-700 text-white font-bold py-3 rounded-lg text-xs tracking-widest uppercase btn-press">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MESSAGE BOX -->
+    <div id="msgBox" class="fixed top-4 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-600 text-white px-6 py-3 rounded-lg shadow-xl z-[70] transition-opacity duration-300 opacity-0 pointer-events-none font-bold tracking-wide text-xs flex items-center gap-2">
+        <i class="fa-solid fa-info-circle text-blue-400"></i>
+        <span id="msgText">Message</span>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        function alertBox(msg) {
+            const box = document.getElementById('msgBox');
+            document.getElementById('msgText').innerText = msg;
+            box.classList.remove('opacity-0');
+            setTimeout(() => { box.classList.add('opacity-0'); }, 3000);
+        }
+
+        document.getElementById('shoot-date').valueAsDate = new Date();
+        
+        // Tab System
+        function switchMainTab(tabId) {
+            ['tab-action', 'tab-camera', 'tab-sound', 'tab-logs'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                let btn = document.getElementById('btn-' + id);
+                btn.classList.remove('text-red-500', 'border-red-500');
+                btn.classList.add('text-zinc-500', 'border-transparent');
             });
-        }
-
-        function createNewProject() {
-            const name = document.getElementById('newProjectName').value.trim();
-            if(!name) return alert('กรุณาพิมพ์ชื่อโปรเจกต์');
-            
-            const newProj = { id: 'proj_' + Date.now(), name: name, logs: [], state: {} };
-            appData.projects.push(newProj);
-            appData.currentProjectId = newProj.id;
-            saveAppData();
-            document.getElementById('newProjectName').value = '';
-            selectProjectAndOpen(newProj.id);
-        }
-
-        function selectProjectAndOpen(id) {
-            appData.currentProjectId = id;
-            saveAppData();
-            loadProjectData();
-            
-            document.getElementById('view-project-launcher').classList.add('hidden');
-            document.getElementById('view-workspace').classList.remove('hidden');
-            switchMainTab('input');
-        }
-
-        function deleteProject(id, e) {
-            e.stopPropagation();
-            if(appData.projects.length <= 1) return alert('ต้องมีอย่างน้อย 1 โปรเจกต์ในระบบ');
-            if(confirm('ลบโปรเจกต์นี้ถาวร? ข้อมูล Take ทั้งหมดจะถูกลบ')) {
-                appData.projects = appData.projects.filter(p => p.id !== id);
-                if(appData.currentProjectId === id) appData.currentProjectId = appData.projects[0].id;
-                saveAppData();
-                renderProjectGrid();
-            }
-        }
-
-        function loadProjectData() {
-            const project = getCurrentProject();
-            logsData = project.logs || [];
-            document.getElementById('currentProjectNameDisplay').innerText = project.name;
-            
-            stateFields.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
-            if(!project.state || !project.state.shootDate) document.getElementById('shootDate').valueAsDate = new Date();
-
-            if(project.state) {
-                stateFields.forEach(id => {
-                    if(document.getElementById(id) && project.state[id]) document.getElementById(id).value = project.state[id];
-                });
-                if(project.state.prefix) document.getElementById('prefixBtn').innerText = project.state.prefix;
-                if(project.state.shotMode) {
-                    shotMode = project.state.shotMode;
-                    document.getElementById('shotModeBtn').innerText = `Shot Mode: ${shotMode === 'letter' ? 'Letters' : 'Numbers'}`;
-                }
-                if(project.state.activeLens) document.getElementById('activeLens').value = project.state.activeLens;
-                if(project.state.camND) document.getElementById('camND').value = project.state.camND;
-            }
-            generateLensButtons();
-            renderLogs();
-        }
-
-        function saveState() {
-            const state = {};
-            stateFields.forEach(id => { if(document.getElementById(id)) state[id] = document.getElementById(id).value; });
-            state.prefix = document.getElementById('prefixBtn').innerText;
-            state.shotMode = shotMode;
-            state.activeLens = document.getElementById('activeLens').value;
-            state.camND = document.getElementById('camND').value;
-            
-            const project = getCurrentProject();
-            project.state = state;
-            saveAppData();
-        }
-
-        document.addEventListener('input', (e) => { if(stateFields.includes(e.target.id)) saveState(); });
-
-        function switchMainTab(tab) {
-            document.getElementById('view-input').classList.add('hidden');
-            document.getElementById('view-log').classList.add('hidden');
-            document.getElementById('tab-main-input').className = "flex-1 py-1.5 text-xs font-bold text-gray-500 hover:text-white tracking-wider";
-            document.getElementById('tab-main-log').className = "flex-1 py-1.5 text-xs font-bold text-gray-500 hover:text-white tracking-wider";
-
-            if(tab === 'input') {
-                document.getElementById('view-input').classList.remove('hidden');
-                document.getElementById('tab-main-input').className = "flex-1 py-1.5 text-xs font-bold border-b-2 border-red-500 text-red-500 tracking-wider";
-            } else {
-                document.getElementById('view-log').classList.remove('hidden');
-                document.getElementById('tab-main-log').className = "flex-1 py-1.5 text-xs font-bold border-b-2 border-red-500 text-red-500 tracking-wider";
-            }
-        }
-
-        function switchDeptTab(tabId) {
-            document.getElementById('camTab').classList.add('hidden');
-            document.getElementById('soundTab').classList.add('hidden');
-            document.getElementById('btn-camTab').className = "tab-btn flex-1 py-1 font-bold text-[9px] text-gray-500 uppercase";
-            document.getElementById('btn-soundTab').className = "tab-btn flex-1 py-1 font-bold text-[9px] text-gray-500 uppercase";
             document.getElementById(tabId).classList.remove('hidden');
-            document.getElementById('btn-' + tabId).className = "tab-btn active flex-1 py-1 font-bold text-[9px] uppercase";
+            let activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('text-zinc-500', 'border-transparent');
+            activeBtn.classList.add('text-red-500', 'border-red-500');
+        }
+
+        let prefixValues = ['-', 'INT', 'EXT', 'I/E'];
+        let currentPrefixIndex = 0;
+        function cyclePrefix() {
+            currentPrefixIndex = (currentPrefixIndex + 1) % prefixValues.length;
+            document.getElementById('val-prefix').innerText = prefixValues[currentPrefixIndex];
+        }
+
+        function updateScene(change) {
+            let val = document.getElementById('val-scene').value;
+            let match = val.match(/(\d+)(?!.*\d)/);
+            if(match) {
+                let num = parseInt(match[0]) + change;
+                if(num < 1) num = 1;
+                document.getElementById('val-scene').value = val.substring(0, match.index) + num + val.substring(match.index + match[0].length);
+            } else if(change > 0) {
+                document.getElementById('val-scene').value += '1';
+            }
         }
 
         let shotMode = 'letter';
         function toggleShotMode() {
             shotMode = shotMode === 'letter' ? 'number' : 'letter';
-            document.getElementById('shotModeBtn').innerText = `Shot Mode: ${shotMode === 'letter' ? 'Letters (A, B, C...)' : 'Numbers (1, 2, 3...)'}`;
-            document.getElementById('shotVal').value = shotMode === 'letter' ? 'A' : '1';
-            saveState();
+            document.getElementById('shotModeBtn').innerText = `Mode: ${shotMode}`;
+            document.getElementById('val-shot').value = shotMode === 'letter' ? 'A' : '1';
         }
 
-        const prefixes = ["INT.", "EXT.", "I/E", "-"];
-        let prefixIdx = 0;
-        function cyclePrefix() {
-            prefixIdx = (prefixIdx + 1) % prefixes.length;
-            document.getElementById('prefixBtn').innerText = prefixes[prefixIdx];
-            saveState();
-        }
-
-        const ndSteps = ["Clear", "0.3 (1 Stop)", "0.6 (2 Stops)", "0.9 (3 Stops)", "1.2 (4 Stops)"];
-        let ndIndex = 0;
-        function cycleND() {
-            ndIndex = (ndIndex + 1) % ndSteps.length;
-            document.getElementById('camND').value = ndSteps[ndIndex];
-            saveState();
-        }
-
-        function updateScene(c) { let v = parseInt(document.getElementById('sceneVal').value)||1; document.getElementById('sceneVal').value = Math.max(1, v + c); saveState(); }
-        function updateShot(c) {
-            let val = document.getElementById('shotVal').value;
-            if(shotMode === 'letter') {
-                let code = val.charCodeAt(0) + c;
-                if(code >= 65 && code <= 90) document.getElementById('shotVal').value = String.fromCharCode(code);
+        function updateShot(change) {
+            let shotVal = document.getElementById('val-shot');
+            let val = shotVal.value.toUpperCase();
+            
+            if (shotMode === 'letter') {
+                if(!/^[A-Z]$/.test(val)) val = 'A';
+                let code = val.charCodeAt(0) + change;
+                if(change > 0) {
+                    if (code === 73) code = 74;
+                    if (code === 79) code = 80;
+                } else {
+                    if (code === 73) code = 72;
+                    if (code === 79) code = 78;
+                }
+                if (code >= 65 && code <= 90) shotVal.value = String.fromCharCode(code);
             } else {
                 let num = parseInt(val) || 1;
-                document.getElementById('shotVal').value = Math.max(1, num + c);
+                num += change;
+                if (num < 1) num = 1;
+                shotVal.value = num;
             }
-            saveState();
         }
-        function updateTake(c) { let v = parseInt(document.getElementById('takeVal').value)||1; document.getElementById('takeVal').value = Math.max(1, v + c); saveState(); }
-        function setStatus(s, b) { document.querySelectorAll('.status-btn').forEach(x => x.classList.remove('ring-2', 'ring-red-500')); b.classList.add('ring-2', 'ring-red-500'); document.getElementById('currentStatus').value = s; }
-        function setSoundSync(s, b) { document.querySelectorAll('.sound-sync-btn').forEach(x => x.className = 'sound-sync-btn bg-gray-800 border border-gray-700 text-gray-300 px-1 py-0.5 text-[8px] rounded font-bold btn-press'); b.className = 'sound-sync-btn bg-red-900 border border-red-500 text-white px-1 py-0.5 text-[8px] rounded font-bold btn-press'; document.getElementById('soundSyncVal').value = s; saveState(); }
 
-        function appendCamFlag(f) { const i = document.getElementById('takeNote'); i.value = i.value.trim()==='' ? f : i.value + ', ' + f; }
-        function appendSoundFlag(f) { const i = document.getElementById('takeNote'); i.value = i.value.trim()==='' ? f : i.value + ', ' + f; }
+        function updateTake(change) {
+            let num = parseInt(document.getElementById('val-take').value) || 1;
+            num += change;
+            if(num < 1) num = 1;
+            document.getElementById('val-take').value = num;
+        }
 
-        function selectLens(l) { document.getElementById('activeLens').value = l; generateLensButtons(); saveState(); }
-        function removeLens(l) {
-            let input = document.getElementById('lensSetupInput').value;
-            let lenses = input.split(',').map(s => s.trim()).filter(s => s && l.toLowerCase() !== (s.toLowerCase().includes('mm')?s.toLowerCase():s.toLowerCase()+'mm'));
-            document.getElementById('lensSetupInput').value = lenses.join(', ');
-            generateLensButtons(); saveState();
+        let currentFrames = 0;
+        function formatTC(totalFrames, fps) {
+            let f = totalFrames % fps;
+            let s = Math.floor(totalFrames / fps) % 60;
+            let m = Math.floor(totalFrames / (fps * 60)) % 60;
+            let h = Math.floor(totalFrames / (fps * 3600)) % 24;
+            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}:${f.toString().padStart(2,'0')}`;
+        }
+        setInterval(() => {
+            currentFrames++;
+            let fps = parseInt(document.getElementById('fps-select').value) || 24;
+            document.getElementById('master-tc').innerText = formatTC(currentFrames, fps);
+        }, 1000 / 24);
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'sceneModal') {
+                document.getElementById('sceneSetupPreview').value = document.getElementById('val-scene').value;
+                document.getElementById('sceneCustomInput').value = document.getElementById('val-scene').value;
+            } else if (id === 'shotModal') {
+                document.getElementById('shotCustomInput').value = document.getElementById('val-shot').value;
+            }
+        }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        function switchModalTab(modal, tab) {
+            const tabs = ['setup', 'custom'];
+            tabs.forEach(t => {
+                const isActive = tab === t;
+                document.getElementById(`${modal}Tab${t.charAt(0).toUpperCase()+t.slice(1)}`).className = 
+                    isActive ? `flex-1 py-3 text-xs font-bold border-b-2 border-red-500 text-red-500 uppercase tracking-widest transition-colors` 
+                             : `flex-1 py-3 text-xs font-bold text-zinc-500 border-b-2 border-transparent uppercase tracking-widest transition-colors`;
+                document.getElementById(`${modal}Content${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle('hidden', !isActive);
+            });
+            if(tab === 'custom') document.getElementById(`${modal}CustomInput`).focus();
+        }
+
+        function appendModalValue(type, val) {
+            if(type === 'scene') document.getElementById('sceneSetupPreview').value += val;
+        }
+
+        function confirmModal(modal, tab) {
+            if(modal === 'scene') {
+                const val = tab === 'setup' ? document.getElementById('sceneSetupPreview').value : document.getElementById('sceneCustomInput').value;
+                if(val.trim() !== "") document.getElementById('val-scene').value = val.trim();
+            } else if (modal === 'shot') {
+                const val = document.getElementById('shotCustomInput').value.trim().toUpperCase();
+                if(val !== "") document.getElementById('val-shot').value = val;
+            }
+            closeModal(`${modal}Modal`);
+        }
+        function confirmDirectShot(val) {
+            document.getElementById('val-shot').value = val;
+            closeModal('shotModal');
+        }
+
+        let rowToDelete = null;
+        function promptDelete(btn) {
+            rowToDelete = btn.closest('tr');
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            rowToDelete = null;
+        }
+        function executeDelete() {
+            if (rowToDelete) rowToDelete.remove();
+            closeDeleteModal();
+            alertBox("Log entry deleted.");
+        }
+
+        function clearLensButtons() {
+            document.getElementById('lensButtonsContainer').innerHTML = '<span class="text-xs text-zinc-600 italic">Generate lenses above...</span>';
+            document.getElementById('lensSetupInput').value = '';
+            document.getElementById('activeLens').value = '-';
+        }
+
+        const ndValues = ["Clear", "0.3", "0.6", "0.9", "1.2", "1.5", "1.8", "2.1", "2.4"];
+        let currentNdIndex = 0;
+        function updateND(change) {
+            currentNdIndex += change;
+            if(currentNdIndex < 0) currentNdIndex = 0;
+            if(currentNdIndex >= ndValues.length) currentNdIndex = ndValues.length - 1;
+            document.getElementById('camND').value = ndValues[currentNdIndex];
         }
 
         function generateLensButtons() {
             const input = document.getElementById('lensSetupInput').value;
             const container = document.getElementById('lensButtonsContainer');
-            if(!input.trim()) { container.innerHTML = ''; return; }
+            if(!input) return;
             const lenses = input.split(',').map(s => s.trim()).filter(s => s);
-            const savedLens = document.getElementById('activeLens').value;
             container.innerHTML = '';
-            
             lenses.forEach((lens, index) => {
-                const lensText = lens.toLowerCase().includes('mm') ? lens : lens + 'mm';
-                const isActive = (savedLens.toLowerCase() === lensText.toLowerCase()) || (!savedLens && index === 0);
-                if(isActive) document.getElementById('activeLens').value = lensText;
-
-                const group = document.createElement('div');
-                group.className = `inline-flex items-center rounded text-[9px] font-bold border ${isActive ? 'bg-red-900 border-red-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300'}`;
-                group.innerHTML = `<button type="button" onclick="selectLens('${lensText}')" class="px-1.5 py-0.2">${lensText}</button><button type="button" onclick="removeLens('${lensText}')" class="pr-1 pl-0.5 text-gray-400 hover:text-red-400 border-l border-gray-700/50">×</button>`;
-                container.appendChild(group);
-            });
-            saveState();
-        }
-
-        function setModalValue(i, v) { document.getElementById(i).value = v; }
-        function openSceneModal() { document.getElementById('sceneCustomInput').value = document.getElementById('sceneVal').value; document.getElementById('sceneModal').classList.remove('hidden'); }
-        function closeSceneModal() { document.getElementById('sceneModal').classList.add('hidden'); }
-        function confirmSceneModal() { const v = document.getElementById('sceneCustomInput').value.trim(); if(v) document.getElementById('sceneVal').value = v; saveState(); closeSceneModal(); }
-        function openShotModal() { document.getElementById('shotCustomInput').value = document.getElementById('shotVal').value; document.getElementById('shotModal').classList.remove('hidden'); }
-        function closeShotModal() { document.getElementById('shotModal').classList.add('hidden'); }
-        function confirmShotModal() { const v = document.getElementById('shotCustomInput').value.trim().toUpperCase(); if(v) document.getElementById('shotVal').value = v; saveState(); closeShotModal(); }
-
-        function logTake() {
-            const prefix = document.getElementById('prefixBtn').innerText;
-            const logEntry = {
-                scene: (prefix !== '-' ? prefix + ' ' : '') + document.getElementById('sceneVal').value,
-                shot: document.getElementById('shotVal').value,
-                take: document.getElementById('takeVal').value,
-                status: document.getElementById('currentStatus').value,
-                camRoll: document.getElementById('camRoll').value,
-                camID: document.getElementById('camID').value || 'A-Cam',
-                lens: document.getElementById('activeLens').value || '-',
-                camTStop: document.getElementById('camTStop').value || '-',
-                soundRoll: document.getElementById('soundRoll').value,
-                soundSync: document.getElementById('soundSyncVal').value || 'SYNC',
-                soundTrack: document.getElementById('soundTrackMap').value || '-',
-                notes: document.getElementById('takeNote').value,
-                id: Date.now()
-            };
-
-            const project = getCurrentProject();
-            project.logs.unshift(logEntry);
-            logsData = project.logs;
-            saveAppData();
-            
-            document.getElementById('takeNote').value = '';
-            document.getElementById('currentStatus').value = '-';
-            document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('ring-2', 'ring-red-500'));
-            renderLogs();
-            updateTake(1);
-        }
-
-        function renderLogs() {
-            const tbody = document.getElementById('logBody');
-            const emptyMsg = document.getElementById('emptyLogMsg');
-            document.getElementById('logCountBadge').innerText = logsData.length;
-            tbody.innerHTML = '';
-            if(logsData.length === 0) return emptyMsg.classList.remove('hidden');
-            emptyMsg.classList.add('hidden');
-
-            logsData.forEach((log, index) => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-900 border-b border-gray-800/40";
-                
-                let statusBadge = `<span class="text-[9px] text-gray-500">-</span>`;
-                if(log.status === 'Circled Take') statusBadge = `<span class="px-1.5 py-0.2 rounded text-[8px] font-bold bg-green-900 text-green-300">Circled</span>`;
-                if(log.status === 'B-Negative') statusBadge = `<span class="px-1.5 py-0.2 rounded text-[8px] font-bold bg-yellow-900 text-yellow-300">B-Neg</span>`;
-                if(log.status === 'No Good') statusBadge = `<span class="px-1.5 py-0.2 rounded text-[8px] font-bold bg-red-900 text-red-300">NG</span>`;
-
-                tr.innerHTML = `
-                    <td class="p-1.5 text-gray-500">${logsData.length - index}</td>
-                    <td class="p-1.5 font-bold text-white">${log.scene}</td>
-                    <td class="p-1.5 font-bold text-yellow-400">${log.shot}</td>
-                    <td class="p-1.5 text-center font-mono font-bold text-red-400">${log.take}</td>
-                    <td class="p-1.5 text-center">${statusBadge}</td>
-                    <td class="p-1.5 text-blue-400 font-mono">${log.camRoll || '-'}<span class="text-[8px] text-yellow-400 ml-1">(${log.camID || 'A-Cam'})</span></td>
-                    <td class="p-1.5 text-purple-400 font-mono">${log.soundRoll || '-'}</td>
-                    <td class="p-1.5"><span class="px-1 py-0.2 rounded text-[8px] font-bold ${log.soundSync === 'SYNC' ? 'bg-green-950 text-green-400' : 'bg-red-950 text-red-400'}">${log.soundSync}</span></td>
-                    <td class="p-1.5 text-gray-300">${log.lens || '-'} @ ${log.camTStop || '-'}</td>
-                    <td class="p-1.5"><input type="text" value="${log.notes || ''}" onchange="updateLogNote(${index}, this.value)" class="w-full bg-transparent border-b border-gray-800 text-xs text-gray-300 py-0.5"></td>
-                    <td class="p-1.5 text-center"><button onclick="deleteLog(${index})" class="text-gray-600 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button></td>
-                `;
-                tbody.appendChild(tr);
+                const btn = document.createElement('button');
+                btn.innerText = lens.includes('mm') ? lens : lens + 'mm';
+                btn.className = `px-4 py-2 rounded-lg text-xs font-bold border btn-press ${index===0 ? 'bg-red-900/50 border-red-500 text-white' : 'bg-zinc-800 border-zinc-700 text-zinc-300'}`;
+                if(index === 0) document.getElementById('activeLens').value = btn.innerText;
+                btn.onclick = function() {
+                    Array.from(container.children).forEach(c => c.className = 'px-4 py-2 rounded-lg text-xs font-bold border btn-press bg-zinc-800 border-zinc-700 text-zinc-300');
+                    this.className = 'px-4 py-2 rounded-lg text-xs font-bold border btn-press bg-red-900/50 border-red-500 text-white';
+                    document.getElementById('activeLens').value = this.innerText;
+                };
+                container.appendChild(btn);
             });
         }
 
-        function updateLogNote(index, value) { logsData[index].notes = value; saveAppData(); }
-        function deleteLog(index) { if(confirm("ลบ Take นี้?")) { logsData.splice(index, 1); saveAppData(); renderLogs(); } }
-        function scrollLogTo(d) { const c = document.getElementById('logTableContainer'); c.scrollTo({ top: d==='top'?0:c.scrollHeight, behavior:'smooth' }); }
-
-        // =========================================================================
-        // 🚀 IN-APP MOBILE EXPORT ENGINE (v1.1 เด้งสรุปในแอป 100% Works)
-        // =========================================================================
-        let currentExportText = "";
-
-        function triggerExport(type) {
-            if (!logsData || logsData.length === 0) return alert('ไม่มีข้อมูล Take ในโปรเจกต์นี้');
-
-            const proj = getCurrentProject();
-            const prodName = document.getElementById('prodName').value || proj.name || 'Project';
-            const date = document.getElementById('shootDate').value || (proj.state ? proj.state.shootDate : '');
-            const director = document.getElementById('director').value || '-';
-            const dop = document.getElementById('dop').value || '-';
-            const sndMixer = document.getElementById('sndMixer').value || '-';
-
-            const modal = document.getElementById('exportModal');
-            const title = document.getElementById('exportModalTitle');
-            const displayArea = document.getElementById('exportDisplayArea');
-
-            // 1. MASTER CSV / SOUND CSV
-            if (type === 'master-csv' || type === 'sound-csv') {
-                const isSound = type === 'sound-csv';
-                title.innerText = isSound ? "Export: Sound CSV Report" : "Export: Master CSV Report";
-
-                let headers = isSound 
-                    ? ["Scene", "Shot", "Take", "Status", "Cam ID/Roll", "Sound Roll", "Sound Sync", "Notes"]
-                    : ["Scene", "Shot", "Take", "Status", "Cam ID", "Cam Roll", "Sound Roll", "Sound Sync", "Lens", "T-Stop", "Notes"];
-
-                let rows = logsData.map(log => {
-                    return isSound 
-                        ? [log.scene, log.shot, log.take, log.status, `${log.camRoll}(${log.camID})`, log.soundRoll, log.soundSync, log.notes]
-                        : [log.scene, log.shot, log.take, log.status, log.camID, log.camRoll, log.soundRoll, log.soundSync, log.lens, log.camTStop, log.notes];
-                });
-
-                currentExportText = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c||'').replace(/"/g, '""')}"`).join(","))].join("\n");
-                
-                displayArea.innerHTML = `
-                    <div class="text-[10px] font-mono text-gray-400 mb-2">โครงสร้างรหัส CSV สำหรับเปิดใน Excel หรือส่งต่อ:</div>
-                    <textarea readonly class="w-full h-80 bg-[#111115] border border-gray-800 p-2 rounded-xl text-green-400 font-mono text-[10px] select-all">${currentExportText}</textarea>
-                `;
-            }
-            // 2. AVID ALE FILE
-            else if (type === 'avid-ale') {
-                title.innerText = "Export: Avid ALE File";
-                let ale = `Heading\nFIELD_DELIM\tTABS\nVIDEO_FORMAT\t1080\nFPS\t24\n\nColumn\nName\tScene\tTake\tTape\tNotes\n\nData\n`;
-                logsData.forEach(row => {
-                    const clipName = `${row.scene}_${row.shot}_T${row.take}`;
-                    ale += `${clipName}\t${row.scene}${row.shot}\t${row.take}\t${row.camRoll || 'A001'}\t${row.notes || ''}\n`;
-                });
-
-                currentExportText = ale;
-                displayArea.innerHTML = `
-                    <div class="text-[10px] font-mono text-gray-400 mb-2">ไฟล์โครงสร้าง Avid Log Exchange (ALE):</div>
-                    <textarea readonly class="w-full h-80 bg-[#111115] border border-gray-800 p-2 rounded-xl text-yellow-400 font-mono text-[10px] select-all">${currentExportText}</textarea>
-                `;
-            }
-            // 3. MASTER PDF / SOUND PDF (Visual Report Sheet สำหรับแคปจอ 100%)
-            else if (type === 'master-pdf' || type === 'sound-pdf') {
-                const isSound = type === 'sound-pdf';
-                title.innerText = isSound ? "Export: Sound PDF Sheet" : "Export: Master PDF Sheet";
-
-                let plainTextSummary = `🎬 ${isSound ? 'SOUND REPORT' : 'MASTER CINE REPORT'} - ${prodName.toUpperCase()}\nDate: ${date} | Total Takes: ${logsData.length}\n----------------------------------\n`;
-                
-                let tableRows = logsData.map((log, index) => {
-                    const num = logsData.length - index;
-                    plainTextSummary += `#${num} Sc:${log.scene} Sh:${log.shot} Tk:${log.take} [${log.status}] Cam:${log.camRoll}(${log.camID}) Snd:${log.soundRoll} ${log.notes ? 'Note:'+log.notes : ''}\n`;
-                    
-                    return `
-                        <tr class="border-b border-gray-300">
-                            <td class="p-1 font-bold text-center">${num}</td>
-                            <td class="p-1 font-bold">${log.scene}</td>
-                            <td class="p-1 font-bold text-amber-700">${log.shot}</td>
-                            <td class="p-1 text-center font-bold text-red-600">${log.take}</td>
-                            <td class="p-1 text-center">${log.status}</td>
-                            <td class="p-1">${log.camRoll || '-'}<br><span class="text-[8px] text-gray-500">(${log.camID})</span></td>
-                            <td class="p-1 font-mono">${log.soundRoll || '-'}</td>
-                            <td class="p-1 text-center">${log.soundSync}</td>
-                            ${!isSound ? `<td class="p-1">${log.lens || '-'} @${log.camTStop || '-'}</td>` : ''}
-                            <td class="p-1 text-gray-700">${log.notes || ''}</td>
-                        </tr>
-                    `;
-                }).join('');
-
-                currentExportText = plainTextSummary;
-
-                displayArea.innerHTML = `
-                    <div class="text-[9px] text-blue-400 mb-2 font-bold"><i class="fa-solid fa-camera mr-1"></i> สามารถแคปภาพหน้าจอตารางด้านล่างนี้ ส่งเข้ากรุ๊ปไลน์ได้ทันที:</div>
-                    <div class="bg-white text-black p-3 rounded-xl shadow-xl font-sans">
-                        <div class="border-b-2 border-black pb-2 mb-2 flex justify-between items-end">
-                            <div>
-                                <h2 class="font-black text-sm uppercase tracking-wider">${isSound ? 'SOUND REPORT' : 'MASTER CINE REPORT'}</h2>
-                                <div class="text-[9px] font-bold text-gray-700">${prodName}</div>
-                            </div>
-                            <div class="text-[9px] text-right font-mono">Date: ${date}</div>
-                        </div>
-                        <div class="text-[8px] text-gray-600 mb-2 flex space-x-3 border-b border-gray-300 pb-1">
-                            <span><b>DIR:</b> ${director}</span>
-                            <span><b>DP:</b> ${dop}</span>
-                            <span><b>MIXER:</b> ${sndMixer}</span>
-                        </div>
-                        <table class="w-full text-left text-[9px] whitespace-nowrap">
-                            <thead>
-                                <tr class="bg-gray-200 text-black border-b border-black font-bold">
-                                    <th class="p-1">#</th>
-                                    <th class="p-1">Scene</th>
-                                    <th class="p-1">Shot</th>
-                                    <th class="p-1 text-center">Take</th>
-                                    <th class="p-1 text-center">Status</th>
-                                    <th class="p-1">Cam ID/Roll</th>
-                                    <th class="p-1">Sound Roll</th>
-                                    <th class="p-1 text-center">Sync</th>
-                                    ${!isSound ? '<th class="p-1">Lens</th>' : ''}
-                                    <th class="p-1">Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody>${tableRows}</tbody>
-                        </table>
-                    </div>
-                `;
-            }
-
-            modal.classList.remove('hidden');
-        }
-
-        function closeExportModal() {
-            document.getElementById('exportModal').classList.add('hidden');
-        }
-
-        function copyExportText() {
-            if (!currentExportText) return;
-            navigator.clipboard.writeText(currentExportText).then(() => {
-                alert('คัดลอกข้อความสรุปเรียบร้อย! สามารถสลับไปแอป LINE แล้วกด "วาง (Paste)" ได้เลย');
-            }).catch(() => {
-                alert('โปรดใช้นิ้วแตะคัดลอกข้อความในกล่องด้วยตนเอง');
+        let currentStatus = "None";
+        function setStatus(status, btn) {
+            document.querySelectorAll('.status-toggle').forEach(b => {
+                b.classList.remove('active-print', 'active-hold', 'active-ng', 'active-fs');
+                b.style.borderColor = ""; b.style.backgroundColor = "";
             });
+            currentStatus = status;
+            if(status === 'PRINT') btn.classList.add('active-print');
+            if(status === 'HOLD') btn.classList.add('active-hold');
+            if(status === 'NG') btn.classList.add('active-ng');
+            if(status === 'FS') btn.classList.add('active-fs');
         }
 
-        function shareExportText() {
-            if (!currentExportText) return;
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Cine Report Wrap Log',
-                    text: currentExportText
-                }).catch(() => {});
+        let sndFlags = [];
+        function toggleFlag(btn, flag) {
+            if(sndFlags.includes(flag)) {
+                sndFlags = sndFlags.filter(f => f !== flag);
+                btn.classList.replace('bg-red-900', 'bg-zinc-800');
+                btn.classList.replace('border-red-500', 'border-zinc-700');
             } else {
-                copyExportText();
+                sndFlags.push(flag);
+                btn.classList.replace('bg-zinc-800', 'bg-red-900');
+                btn.classList.replace('border-zinc-700', 'border-red-500');
             }
+        }
+
+        let logCounter = 1;
+        function logTake() {
+            const flash = document.getElementById('flashOverlay');
+            flash.classList.remove('flash-active');
+            void flash.offsetWidth; 
+            flash.classList.add('flash-active');
+
+            const prefix = document.getElementById('val-prefix').innerText;
+            const scene = document.getElementById('val-scene').value;
+            const shot = document.getElementById('val-shot').value;
+            const take = document.getElementById('val-take').value;
+            let status = currentStatus;
+            if(status === 'None') status = '-';
+            
+            const tcOut = document.getElementById('master-tc').innerText;
+            const tcInParts = tcOut.split(':');
+            let secIn = parseInt(tcInParts[2]) - 10;
+            if(secIn < 0) secIn += 60;
+            const tcIn = `${tcInParts[0]}:${tcInParts[1]}:${secIn.toString().padStart(2,'0')}:${tcInParts[3]}`;
+
+            const camRoll = document.getElementById('cam-roll').value;
+            const sndRoll = document.getElementById('snd-roll').value;
+            const lens = document.getElementById('activeLens').value;
+            const tstop = document.getElementById('camTStop').value;
+            
+            let notes = sndFlags.length > 0 ? `[${sndFlags.join(', ')}] ` : "";
+
+            let badgeClass = "bg-zinc-700 text-zinc-300";
+            if(status === 'PRINT') badgeClass = "bg-emerald-900/40 text-emerald-400 border border-emerald-800";
+            if(status === 'HOLD') badgeClass = "bg-amber-900/40 text-amber-400 border border-amber-800";
+            if(status === 'NG') badgeClass = "bg-red-900/40 text-red-400 border border-red-800";
+            if(status === 'FS') badgeClass = "bg-orange-900/40 text-orange-400 border border-orange-800";
+
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-zinc-800/50 border-b border-zinc-800/50 transition-colors";
+            tr.innerHTML = `
+                <td class="p-2 border-r border-zinc-800/50 text-zinc-600">${logCounter}</td>
+                <td class="p-2 border-r border-zinc-800/50 font-bold text-zinc-400 text-center">${prefix !== '-' ? prefix : ''}</td>
+                <td class="p-2 border-r border-zinc-800/50 font-bold text-white">${scene}</td>
+                <td class="p-2 border-r border-zinc-800/50 text-amber-500 font-bold">${shot}</td>
+                <td class="p-2 border-r border-zinc-800/50 text-center font-bold text-base text-red-500">${take}</td>
+                <td class="p-2 border-r border-zinc-800/50 text-center">
+                    <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${badgeClass}">${status}</span>
+                </td>
+                <td class="p-2 border-r border-zinc-800/50 text-zinc-500">${tcIn}</td>
+                <td class="p-2 border-r border-zinc-800/50 text-white">${tcOut}</td>
+                <td class="p-2 border-r border-zinc-800/50 text-zinc-400">${camRoll} / ${lens}</td>
+                <td class="p-2 border-r border-zinc-800/50 text-zinc-400">${sndRoll}</td>
+                <td class="p-2 border-r border-zinc-800/50">
+                    <input type="text" value="${notes}" class="w-full bg-transparent border-b border-transparent focus:border-zinc-500 text-xs px-1 text-zinc-300 outline-none placeholder-zinc-700" placeholder="Notes...">
+                </td>
+                <td class="p-2 text-center">
+                    <button onclick="promptDelete(this)" class="text-zinc-600 hover:text-red-500 transition-colors bg-zinc-900 px-3 py-1 rounded border border-zinc-800">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            document.getElementById('logBody').prepend(tr);
+
+            updateTake(1);
+            logCounter++;
+            currentStatus = "None";
+            document.querySelectorAll('.status-toggle').forEach(b => {
+                b.classList.remove('active-print', 'active-hold', 'active-ng', 'active-fs');
+            });
         }
     </script>
 </body>
